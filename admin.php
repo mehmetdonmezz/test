@@ -104,6 +104,9 @@ function q($k, $v) {
     <a class="navbar-brand" href="index.php">ARDİO Admin</a>
     <div class="d-flex gap-2">
       <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span></button>
+      <?php if (isset($_SESSION['impersonator_admin_id'])): ?>
+        <a href="admin_unimpersonate.php" class="btn btn-warning btn-sm">Admin’e Geri Dön</a>
+      <?php endif; ?>
       <a href="logout.php" class="btn btn-outline-light btn-sm">Çıkış Yap</a>
     </div>
   </div>
@@ -154,45 +157,65 @@ function q($k, $v) {
     </div>
   </form>
 
-  <div class="table-responsive">
-    <table class="table table-dark table-striped align-middle table-hover table-clean">
-      <thead>
-        <tr>
-          <th><a class="link-light" href="<?= q('sort','user_id') . '&dir=' . ($sort==='user_id' && $dir==='ASC' ? 'desc' : 'asc') ?>">#</a></th>
-          <th><a class="link-light" href="<?= q('sort','name') . '&dir=' . ($sort==='name' && $dir==='ASC' ? 'desc' : 'asc') ?>">Ad Soyad</a></th>
-          <th><a class="link-light" href="<?= q('sort','email') . '&dir=' . ($sort==='email' && $dir==='ASC' ? 'desc' : 'asc') ?>">E-posta</a></th>
-          <th>Rol</th>
-          <th><a class="link-light" href="<?= q('sort','hasta_adi') . '&dir=' . ($sort==='hasta_adi' && $dir==='ASC' ? 'desc' : 'asc') ?>">Hasta Adı</a></th>
-          <th><a class="link-light" href="<?= q('sort','hasta_dogum') . '&dir=' . ($sort==='hasta_dogum' && $dir==='ASC' ? 'desc' : 'asc') ?>">Doğum</a></th>
-          <th><a class="link-light" href="<?= q('sort','hasta_kan') . '&dir=' . ($sort==='hasta_kan' && $dir==='ASC' ? 'desc' : 'asc') ?>">Kan</a></th>
-          <th>İlaçlar</th>
-          <th>Notlar</th>
-          <th class="text-end">İşlemler</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php foreach($rows as $row): ?>
-        <tr>
-          <td><?= (int)$row['user_id'] ?></td>
-          <td><?= htmlspecialchars($row['name']) ?></td>
-          <td><a class="text-info text-decoration-none" href="mailto:<?= htmlspecialchars($row['email']) ?>"><?= htmlspecialchars($row['email']) ?></a></td>
-          <td><?= $row['is_admin'] ? '<span class="badge bg-warning text-dark">Admin</span>' : '<span class="badge bg-secondary">Kullanıcı</span>' ?></td>
-          <td><?= htmlspecialchars($row['hasta_adi'] ?? '-') ?></td>
-          <td><?= htmlspecialchars($row['hasta_dogum'] ?? '-') ?></td>
-          <td><?= htmlspecialchars($row['hasta_kan'] ?? '-') ?></td>
-          <td style="max-width:220px" class="text-truncate" title="<?= htmlspecialchars($row['hasta_ilac'] ?? '-') ?>"><?= htmlspecialchars($row['hasta_ilac'] ?? '-') ?></td>
-          <td style="max-width:220px" class="text-truncate" title="<?= htmlspecialchars($row['hasta_notlar'] ?? '-') ?>"><?= htmlspecialchars($row['hasta_notlar'] ?? '-') ?></td>
-          <td class="text-end">
-            <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewModal" data-row='<?= json_encode($row, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>'>Görüntüle</button>
-            <a href="admin_edit_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-warning">Düzenle</a>
-            <a href="admin_impersonate.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-light" onclick="return confirm('Bu kullanıcı olarak giriş yapılacak. Devam edilsin mi?')">Giriş Yap</a>
-            <a href="admin_delete_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Kullanıcıyı silmek istediğinize emin misiniz?')">Sil</a>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
+  <form method="post" action="admin_bulk_action.php" onsubmit="return confirmBulk(this);">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+      <div class="input-group input-group-sm" style="max-width:420px;">
+        <select name="action" class="form-select form-select-sm" required>
+          <option value="" selected>Toplu işlem seçin…</option>
+          <option value="delete">Seçilenleri Sil</option>
+          <option value="make_admin">Seçilenleri Admin Yap</option>
+          <option value="make_user">Seçilenleri Kullanıcı Yap</option>
+        </select>
+        <button class="btn btn-outline-light" type="submit">Uygula</button>
+      </div>
+      <div class="form-check ms-2">
+        <input class="form-check-input" type="checkbox" id="checkAll" onclick="toggleAll(this)" />
+        <label class="form-check-label" for="checkAll">Tümünü Seç</label>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-dark table-striped align-middle table-hover table-clean">
+        <thead>
+          <tr>
+            <th></th>
+            <th><a class="link-light" href="<?= q('sort','user_id') . '&dir=' . ($sort==='user_id' && $dir==='ASC' ? 'desc' : 'asc') ?>">#</a></th>
+            <th><a class="link-light" href="<?= q('sort','name') . '&dir=' . ($sort==='name' && $dir==='ASC' ? 'desc' : 'asc') ?>">Ad Soyad</a></th>
+            <th><a class="link-light" href="<?= q('sort','email') . '&dir=' . ($sort==='email' && $dir==='ASC' ? 'desc' : 'asc') ?>">E-posta</a></th>
+            <th>Rol</th>
+            <th><a class="link-light" href="<?= q('sort','hasta_adi') . '&dir=' . ($sort==='hasta_adi' && $dir==='ASC' ? 'desc' : 'asc') ?>">Hasta Adı</a></th>
+            <th><a class="link-light" href="<?= q('sort','hasta_dogum') . '&dir=' . ($sort==='hasta_dogum' && $dir==='ASC' ? 'desc' : 'asc') ?>">Doğum</a></th>
+            <th><a class="link-light" href="<?= q('sort','hasta_kan') . '&dir=' . ($sort==='hasta_kan' && $dir==='ASC' ? 'desc' : 'asc') ?>">Kan</a></th>
+            <th>İlaçlar</th>
+            <th>Notlar</th>
+            <th class="text-end">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php foreach($rows as $row): ?>
+          <tr>
+            <td><input class="form-check-input" type="checkbox" name="ids[]" value="<?= (int)$row['user_id'] ?>" /></td>
+            <td><?= (int)$row['user_id'] ?></td>
+            <td><?= htmlspecialchars($row['name']) ?></td>
+            <td><a class="text-info text-decoration-none" href="mailto:<?= htmlspecialchars($row['email']) ?>"><?= htmlspecialchars($row['email']) ?></a></td>
+            <td><?= $row['is_admin'] ? '<span class="badge bg-warning text-dark">Admin</span>' : '<span class="badge bg-secondary">Kullanıcı</span>' ?></td>
+            <td><?= htmlspecialchars($row['hasta_adi'] ?? '-') ?></td>
+            <td><?= htmlspecialchars($row['hasta_dogum'] ?? '-') ?></td>
+            <td><?= htmlspecialchars($row['hasta_kan'] ?? '-') ?></td>
+            <td style="max-width:220px" class="text-truncate" title="<?= htmlspecialchars($row['hasta_ilac'] ?? '-') ?>"><?= htmlspecialchars($row['hasta_ilac'] ?? '-') ?></td>
+            <td style="max-width:220px" class="text-truncate" title="<?= htmlspecialchars($row['hasta_notlar'] ?? '-') ?>"><?= htmlspecialchars($row['hasta_notlar'] ?? '-') ?></td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewModal" data-row='<?= json_encode($row, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>'>Görüntüle</button>
+              <a href="admin_edit_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-warning">Düzenle</a>
+              <a href="admin_impersonate.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-light" onclick="return confirm('Bu kullanıcı olarak giriş yapılacak. Devam edilsin mi?')">Giriş Yap</a>
+              <a href="admin_delete_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Kullanıcıyı silmek istediğinize emin misiniz?')">Sil</a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </form>
 
   <nav aria-label="Sayfalama" class="mt-3">
     <ul class="pagination pagination-sm">
@@ -252,6 +275,17 @@ function escapeHtml(unsafe){
     .replaceAll('>','&gt;')
     .replaceAll('"','&quot;')
     .replaceAll("'",'&#039;');
+}
+function toggleAll(cb){
+  document.querySelectorAll('input[name="ids[]"]').forEach(el=>{ el.checked = cb.checked; });
+}
+function confirmBulk(form){
+  const action = form.action.value || form.querySelector('select[name="action"]').value;
+  const checked = Array.from(form.querySelectorAll('input[name="ids[]"]:checked')).length;
+  if (!checked) { alert('Önce en az bir kullanıcı seçiniz.'); return false; }
+  if (!action) { alert('Bir toplu işlem seçiniz.'); return false; }
+  if (action==='delete') return confirm('Seçilen kullanıcıları silmek istediğinize emin misiniz?');
+  return true;
 }
 </script>
 </body>
