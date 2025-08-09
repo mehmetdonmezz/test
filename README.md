@@ -46,12 +46,21 @@ Kayıtlı hasta/veli panelinden hasta bilgileri yönetilir; her kullanıcı içi
   - Ana sayfa galeri görsellerini yükleme/silme
 
 ## Ekran Görüntüleri
-> Not: Aşağıdaki görseller yer tutucudur. Projeyi yerelde çalıştırdığınızda gerçek ekran görüntülerini `docs/screenshots/` altına alıp buraya ekleyebilirsiniz.
+Aşağıdaki görselleri `docs/screenshots/` altına yerleştirerek README’de görünür yapabilirsiniz:
 
-- Ana Sayfa (Landing)
-- Kullanıcı Paneli
-- Acil Profil (NFC/QR ile açılan sayfa)
-- Admin Paneli
+- Ana Sayfa: `docs/screenshots/landing.png`
+- Kullanıcı Paneli: `docs/screenshots/panel.png`
+- Acil Profil: `docs/screenshots/emergency.png`
+- Admin Paneli: `docs/screenshots/admin.png`
+
+Örnek referans:
+
+```markdown
+![Ana Sayfa](docs/screenshots/landing.png)
+![Kullanıcı Paneli](docs/screenshots/panel.png)
+![Acil Profil](docs/screenshots/emergency.png)
+![Admin Paneli](docs/screenshots/admin.png)
+```
 
 ## Teknolojiler
 - PHP 8+ (PDO)
