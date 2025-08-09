@@ -2,7 +2,7 @@
 session_start();
 ?>
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -28,8 +28,11 @@ session_start();
           <li class="nav-item"><a href="#features" class="nav-link">Özellikler</a></li>
           <li class="nav-item"><a href="#faq" class="nav-link">SSS</a></li>
           <li class="nav-item"><a href="#contact" class="nav-link">İletişim</a></li>
+          <li class="nav-item ms-2">
+            <button class="btn btn-sm btn-outline-info" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span> Moda Geç</button>
+          </li>
           <?php if (isset($_SESSION['user_name'])): ?>
-            <li class="nav-item ms-2 d-flex align-items-center text-white-50">Hoşgeldin, <strong class="ms-1 text-white"><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong></li>
+            <li class="nav-item ms-3 d-flex align-items-center text-white-50">Hoşgeldin, <strong class="ms-1 text-white"><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong></li>
             <li class="nav-item"><a href="logout.php" class="nav-link text-danger">Çıkış</a></li>
           <?php else: ?>
             <li class="nav-item"><a href="login.php" class="nav-link text-success">Giriş</a></li>
@@ -129,5 +132,6 @@ session_start();
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/theme.js"></script>
 </body>
 </html>
