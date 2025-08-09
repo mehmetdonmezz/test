@@ -55,3 +55,14 @@ body {
 /* Footer */
 .footer-link { color: rgba(255,255,255,.7); text-decoration: none; }
 .footer-link:hover { color: #fff; text-decoration: underline; }
+
+/* Dark theme readability tweaks */
+[data-bs-theme="dark"] .card.bg-black { background-color: #10151f !important; border-color: rgba(255,255,255,.06) !important; }
+[data-bs-theme="dark"] .form-label { color: rgba(255,255,255,.9) !important; }
+[data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select {
+  background-color: #0d1117 !important;
+  border-color: #2b3441 !important;
+  color: #e9ecef !important;
+}
+[data-bs-theme="dark"] .form-control::placeholder { color: rgba(233,236,239,.6) !important; }
+[data-bs-theme="dark"] .list-group-item.bg-black { background-color: #0f1520 !important; color: #e9ecef !important; }
