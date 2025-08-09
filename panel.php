@@ -9,6 +9,34 @@ $stmtUser = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
 $stmtUser->execute([$user_id]);
 $user = $stmtUser->fetch();
 
+// Avatar yükleme işlemi
+$avatarDir = __DIR__ . '/assets/avatars';
+if (!is_dir($avatarDir)) { @mkdir($avatarDir, 0775, true); }
+$avatarPath = $avatarDir . "/user_{$user_id}.png";
+$avatarUrl = 'assets/avatars/user_' . $user_id . '.png';
+if (isset($_POST['__avatar_upload']) && isset($_FILES['avatar']) && is_uploaded_file($_FILES['avatar']['tmp_name'])) {
+    $info = getimagesize($_FILES['avatar']['tmp_name']);
+    if ($info && in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF], true)) {
+        // PNG olarak kaydet
+        $img = imagecreatefromstring(file_get_contents($_FILES['avatar']['tmp_name']));
+        if ($img) {
+            // Kare kırp ve küçült
+            $w = imagesx($img); $h = imagesy($img); $size = min($w,$h);
+            $srcX = (int)(($w - $size)/2); $srcY = (int)(($h - $size)/2);
+            $dst = imagecreatetruecolor(256,256);
+            imagecopyresampled($dst, $img, 0,0, $srcX,$srcY, 256,256, $size,$size);
+            imagepng($dst, $avatarPath, 8);
+            imagedestroy($dst);
+            imagedestroy($img);
+        } else {
+            // doğrudan kopyala fallback
+            move_uploaded_file($_FILES['avatar']['tmp_name'], $avatarPath);
+        }
+    }
+    header('Location: panel.php');
+    exit;
+}
+
 $infoSaved = false;
 $error = "";
 
@@ -66,7 +94,7 @@ function parseNotes(?string $notes): array {
     return $meta;
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['__avatar_upload'])) {
     $hasta_adi = trim($_POST["hasta_adi"] ?? "");
     $hasta_dogum = trim($_POST["hasta_dogum"] ?? "");
     $hasta_kan = trim($_POST["hasta_kan"] ?? "");
@@ -135,12 +163,13 @@ $publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
 );
 $qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($publicUrl);
 
-// Avatar için baş harfler
+// Avatar için baş harfler veya dosya
 $initials = '';
 if (!empty($user['name'])) {
   $parts = preg_split('/\s+/', trim($user['name']));
   $initials = strtoupper(mb_substr($parts[0] ?? '', 0, 1) . mb_substr(end($parts) ?: '', 0, 1));
 }
+$hasAvatar = file_exists($avatarPath);
 ?>
 
 <!DOCTYPE html>
@@ -157,13 +186,27 @@ if (!empty($user['name'])) {
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
     <a class="navbar-brand" href="index.php">ARDİO</a>
     <div class="ms-auto small d-flex align-items-center gap-3">
-      <div class="d-flex align-items-center gap-2">
-        <div class="rounded-circle bg-info d-inline-flex justify-content-center align-items-center" style="width:36px;height:36px;">
-          <span class="fw-bold text-dark"><?= htmlspecialchars($initials ?: 'U') ?></span>
-        </div>
-        <div class="d-none d-md-block">
-          <div class="fw-semibold small mb-0"><?= htmlspecialchars($user['name'] ?? '') ?></div>
-          <div class="text-white-50 small"><?= htmlspecialchars($user['email'] ?? '') ?></div>
+      <div class="dropdown">
+        <a class="d-flex align-items-center gap-2 text-decoration-none text-white" href="#" id="avatarMenu" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="rounded-circle bg-info d-inline-flex justify-content-center align-items-center overflow-hidden" style="width:36px;height:36px;">
+            <?php if ($hasAvatar): ?>
+              <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="avatar" style="width:36px;height:36px;object-fit:cover;" />
+            <?php else: ?>
+              <span class="fw-bold text-dark"><?= htmlspecialchars($initials ?: 'U') ?></span>
+            <?php endif; ?>
+          </div>
+          <div class="d-none d-md-block text-start">
+            <div class="fw-semibold small mb-0"><?= htmlspecialchars($user['name'] ?? '') ?></div>
+            <div class="text-white-50 small"><?= htmlspecialchars($user['email'] ?? '') ?></div>
+          </div>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="avatarMenu" style="min-width:260px;">
+          <form method="post" action="panel.php" enctype="multipart/form-data">
+            <input type="hidden" name="__avatar_upload" value="1" />
+            <div class="mb-2 small text-muted">Avatar yükle (kare görsel önerilir):</div>
+            <input class="form-control form-control-sm mb-2" type="file" name="avatar" accept="image/*" />
+            <button class="btn btn-sm btn-primary w-100">Yükle</button>
+          </form>
         </div>
       </div>
       <?php if (isAdmin()): ?>
@@ -189,7 +232,7 @@ if (!empty($user['name'])) {
 
         <div class="card bg-black border-0 shadow-sm mb-4">
           <div class="card-body">
-            <form method="POST" action="panel.php" class="mb-1">
+            <form method="POST" action="panel.php" class="mb-1" enctype="multipart/form-data">
               <ul class="nav nav-tabs" id="infoTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                   <button class="nav-link active" id="genel-tab" data-bs-toggle="tab" data-bs-target="#genel" type="button" role="tab">Genel</button>
