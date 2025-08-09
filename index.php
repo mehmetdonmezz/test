@@ -23,7 +23,7 @@ session_start();
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbars">
-        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-2">
           <li class="nav-item"><a href="#about" class="nav-link">Hakkında</a></li>
           <li class="nav-item"><a href="#features" class="nav-link">Özellikler</a></li>
           <li class="nav-item"><a href="#faq" class="nav-link">SSS</a></li>
@@ -32,7 +32,11 @@ session_start();
             <button class="btn btn-sm btn-outline-info" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span> Moda Geç</button>
           </li>
           <?php if (isset($_SESSION['user_name'])): ?>
-            <li class="nav-item ms-3 d-flex align-items-center text-white-50">Hoşgeldin, <strong class="ms-1 text-white"><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong></li>
+            <?php if (isset($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1): ?>
+              <li class="nav-item"><a href="admin.php" class="btn btn-sm btn-outline-warning ms-lg-2">Admin</a></li>
+            <?php endif; ?>
+            <li class="nav-item"><a href="panel.php" class="btn btn-sm btn-outline-light ms-lg-2">Panel</a></li>
+            <li class="nav-item ms-lg-2 d-flex align-items-center text-white-50">Hoşgeldin, <strong class="ms-1 text-white"><?php echo htmlspecialchars($_SESSION['user_name']); ?></strong></li>
             <li class="nav-item"><a href="logout.php" class="nav-link text-danger">Çıkış</a></li>
           <?php else: ?>
             <li class="nav-item"><a href="login.php" class="nav-link text-success">Giriş</a></li>
