@@ -194,7 +194,7 @@ $hasAvatar = file_exists($avatar['path']);
 ?>
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <title>Kullanıcı Paneli - ARDİO</title>
@@ -241,7 +241,7 @@ $hasAvatar = file_exists($avatar['path']);
     <div class="row g-4">
       <div class="col-lg-8">
         <div class="d-flex align-items-center mb-3">
-          <h2 class="mb-0">Hasta Bilgileri</h2>
+          <h2 class="mb-0 fw-semibold">Hasta Bilgileri</h2>
           <span class="badge badge-soft ms-2">Kişisel</span>
         </div>
 
@@ -269,19 +269,19 @@ $hasAvatar = file_exists($avatar['path']);
                 <div class="tab-pane fade show active" id="genel" role="tabpanel">
                   <div class="row g-3">
                     <div class="col-md-6">
-                      <label for="hasta_adi" class="form-label">Hasta Adı Soyadı</label>
+                      <label for="hasta_adi" class="form-label fw-semibold">Hasta Adı Soyadı</label>
                       <input type="text" id="hasta_adi" name="hasta_adi" class="form-control" required value="<?= htmlspecialchars($patient["hasta_adi"] ?? "") ?>" />
                     </div>
                     <div class="col-md-3">
-                      <label for="hasta_dogum" class="form-label">Doğum Tarihi</label>
+                      <label for="hasta_dogum" class="form-label fw-semibold">Doğum Tarihi</label>
                       <input type="date" id="hasta_dogum" name="hasta_dogum" class="form-control" required value="<?= htmlspecialchars($patient["hasta_dogum"] ?? "") ?>" />
                     </div>
                     <div class="col-md-3">
-                      <label for="hasta_kan" class="form-label">Kan Grubu</label>
+                      <label for="hasta_kan" class="form-label fw-semibold">Kan Grubu</label>
                       <input type="text" id="hasta_kan" name="hasta_kan" class="form-control" placeholder="Örn: 0 Rh+" value="<?= htmlspecialchars($patient["hasta_kan"] ?? "") ?>" />
                     </div>
                     <div class="col-12">
-                      <label class="form-label">Adres</label>
+                      <label class="form-label fw-semibold">Adres</label>
                       <textarea name="address" class="form-control" rows="2" placeholder="İkamet adresi..."><?= htmlspecialchars($meta['address']) ?></textarea>
                     </div>
                   </div>
@@ -289,27 +289,27 @@ $hasAvatar = file_exists($avatar['path']);
                 <div class="tab-pane fade" id="saglik" role="tabpanel">
                   <div class="row g-3">
                     <div class="col-md-6">
-                      <label class="form-label">Alerjiler</label>
+                      <label class="form-label fw-semibold">Alerjiler</label>
                       <input type="text" name="allergies" class="form-control" placeholder="Virgülle ayırın: Penisilin, Yer fıstığı" value="<?= htmlspecialchars($meta['allergies']) ?>" />
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label">Kronik Hastalıklar</label>
+                      <label class="form-label fw-semibold">Kronik Hastalıklar</label>
                       <input type="text" name="conditions" class="form-control" placeholder="Virgülle ayırın: Diyabet, Hipertansiyon" value="<?= htmlspecialchars($meta['conditions']) ?>" />
                     </div>
                     <div class="col-12">
-                      <label for="hasta_ilac" class="form-label">İlaçlar</label>
+                      <label for="hasta_ilac" class="form-label fw-semibold">İlaçlar</label>
                       <textarea id="hasta_ilac" name="hasta_ilac" class="form-control" rows="2" placeholder="Düzenli kullanılan ilaçlar, dozlar vb."><?= htmlspecialchars($patient["hasta_ilac"] ?? "") ?></textarea>
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label">Doktor Adı</label>
+                      <label class="form-label fw-semibold">Doktor Adı</label>
                       <input type="text" name="doctor_name" class="form-control" value="<?= htmlspecialchars($meta['doctor_name']) ?>" />
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label">Doktor Telefonu</label>
+                      <label class="form-label fw-semibold">Doktor Telefonu</label>
                       <input type="text" name="doctor_phone" class="form-control" placeholder="0xxx..." value="<?= htmlspecialchars($meta['doctor_phone']) ?>" />
                     </div>
                     <div class="col-12">
-                      <label for="extra_notes" class="form-label">Ek Notlar</label>
+                      <label for="extra_notes" class="form-label fw-semibold">Ek Notlar</label>
                       <textarea id="extra_notes" name="extra_notes" class="form-control" rows="3" placeholder="Diğer önemli bilgiler (alerji taşı, implant, cihaz vb.)"><?= htmlspecialchars($meta['extra']) ?></textarea>
                     </div>
                   </div>
@@ -317,11 +317,11 @@ $hasAvatar = file_exists($avatar['path']);
                 <div class="tab-pane fade" id="iletisim" role="tabpanel">
                   <div class="row g-3">
                     <div class="col-md-6">
-                      <label class="form-label">Acil İletişim Adı</label>
+                      <label class="form-label fw-semibold">Acil İletişim Adı</label>
                       <input type="text" name="emergency_name" class="form-control" value="<?= htmlspecialchars($meta['emergency_name']) ?>" />
                     </div>
                     <div class="col-md-6">
-                      <label class="form-label">Acil İletişim Telefonu</label>
+                      <label class="form-label fw-semibold">Acil İletişim Telefonu</label>
                       <input type="text" name="emergency_phone" class="form-control" placeholder="05xx..." value="<?= htmlspecialchars($meta['emergency_phone']) ?>" />
                     </div>
                     <div class="col-12">
@@ -341,34 +341,34 @@ $hasAvatar = file_exists($avatar['path']);
         <?php if ($patient): ?>
           <div class="card bg-black border-0 shadow-sm">
             <div class="card-header border-0 d-flex align-items-center justify-content-between">
-              <h5 class="mb-0">Özet</h5>
+              <h5 class="mb-0 fw-semibold">Özet</h5>
               <a class="btn btn-sm btn-outline-light" href="<?= htmlspecialchars($publicUrl) ?>" target="_blank">Acil Kartı (QR)</a>
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-md-6"><strong>Adı Soyadı:</strong> <?= htmlspecialchars($patient["hasta_adi"]) ?></div>
-                <div class="col-md-3"><strong>Doğum:</strong> <?= htmlspecialchars($patient["hasta_dogum"]) ?></div>
-                <div class="col-md-3"><strong>Kan:</strong> <?= htmlspecialchars($patient["hasta_kan"]) ?></div>
+                <div class="col-md-6"><strong>Adı Soyadı:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_adi"]) ?></span></div>
+                <div class="col-md-3"><strong>Doğum:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_dogum"]) ?></span></div>
+                <div class="col-md-3"><strong>Kan:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_kan"]) ?></span></div>
                 <?php if ($meta['emergency_name'] || $meta['emergency_phone']): ?>
-                  <div class="col-12"><strong>Acil İletişim:</strong> <?= htmlspecialchars(trim($meta['emergency_name'].' '.$meta['emergency_phone'])) ?></div>
+                  <div class="col-12"><strong>Acil İletişim:</strong> <span class="text-light"><?= htmlspecialchars(trim($meta['emergency_name'].' '.$meta['emergency_phone'])) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['address']): ?>
-                  <div class="col-12"><strong>Adres:</strong> <?= nl2br(htmlspecialchars($meta['address'])) ?></div>
+                  <div class="col-12"><strong>Adres:</strong> <span class="text-light"><?= nl2br(htmlspecialchars($meta['address'])) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['doctor_name'] || $meta['doctor_phone']): ?>
-                  <div class="col-12"><strong>Doktor:</strong> <?= htmlspecialchars(trim($meta['doctor_name'].' '.$meta['doctor_phone'])) ?></div>
+                  <div class="col-12"><strong>Doktor:</strong> <span class="text-light"><?= htmlspecialchars(trim($meta['doctor_name'].' '.$meta['doctor_phone'])) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['allergies']): ?>
-                  <div class="col-12"><strong>Alerjiler:</strong> <?= htmlspecialchars($meta['allergies']) ?></div>
+                  <div class="col-12"><strong>Alerjiler:</strong> <span class="text-light"><?= htmlspecialchars($meta['allergies']) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['conditions']): ?>
-                  <div class="col-12"><strong>Kronik Hastalıklar:</strong> <?= htmlspecialchars($meta['conditions']) ?></div>
+                  <div class="col-12"><strong>Kronik Hastalıklar:</strong> <span class="text-light"><?= htmlspecialchars($meta['conditions']) ?></span></div>
                 <?php endif; ?>
                 <?php if (!empty($patient['hasta_ilac'])): ?>
-                  <div class="col-12"><strong>İlaçlar:</strong><br/><?= nl2br(htmlspecialchars($patient['hasta_ilac'])) ?></div>
+                  <div class="col-12"><strong>İlaçlar:</strong><br/><span class="text-light"><?= nl2br(htmlspecialchars($patient['hasta_ilac'])) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['extra']): ?>
-                  <div class="col-12"><strong>Ek Notlar:</strong><br/><?= nl2br(htmlspecialchars($meta['extra'])) ?></div>
+                  <div class="col-12"><strong>Ek Notlar:</strong><br/><span class="text-light"><?= nl2br(htmlspecialchars($meta['extra'])) ?></span></div>
                 <?php endif; ?>
               </div>
             </div>
