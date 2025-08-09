@@ -64,6 +64,8 @@ function getSiteSettings(): array {
         $defaults = [
             'hero_title' => 'Kaybolmayı İmkânsız Kılan Bileklik',
             'hero_subtitle' => 'ARDİO, Alzheimer ve zihinsel engelli bireyler için akıllı bileklik ve acil bilgi platformu.',
+            'hero_title_en' => 'The Bracelet That Makes Getting Lost Impossible',
+            'hero_subtitle_en' => "ARDİO is a smart bracelet and emergency info platform for Alzheimer’s and cognitively impaired individuals.",
             'contact_email' => 'merhaba@ardiodigital.com',
             'social' => [
                 'twitter' => '', 'instagram' => '', 'linkedin' => '', 'youtube' => ''
@@ -82,3 +84,6 @@ function saveSiteSettings(array $settings): bool {
     $json = json_encode($settings, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE);
     return (bool)file_put_contents($path, $json, LOCK_EX);
 }
+
+// Çoklu dil desteği için başlangıç
+require_once __DIR__ . '/lang.php';

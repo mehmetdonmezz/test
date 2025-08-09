@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lang.php';
+setLangFromRequest();
 requireAdmin();
 
 $settings = getSiteSettings();
@@ -8,9 +10,11 @@ if (!is_dir($galleryDir)) @mkdir($galleryDir, 0775, true);
 
 // Kaydet
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_settings'])) {
-    $settings['hero_title'] = trim($_POST['hero_title'] ?? $settings['hero_title']);
-    $settings['hero_subtitle'] = trim($_POST['hero_subtitle'] ?? $settings['hero_subtitle']);
-    $settings['contact_email'] = trim($_POST['contact_email'] ?? $settings['contact_email']);
+    $settings['hero_title'] = trim($_POST['hero_title'] ?? ($settings['hero_title'] ?? ''));
+    $settings['hero_subtitle'] = trim($_POST['hero_subtitle'] ?? ($settings['hero_subtitle'] ?? ''));
+    $settings['hero_title_en'] = trim($_POST['hero_title_en'] ?? ($settings['hero_title_en'] ?? ''));
+    $settings['hero_subtitle_en'] = trim($_POST['hero_subtitle_en'] ?? ($settings['hero_subtitle_en'] ?? ''));
+    $settings['contact_email'] = trim($_POST['contact_email'] ?? ($settings['contact_email'] ?? ''));
     $settings['social']['twitter'] = trim($_POST['twitter'] ?? '');
     $settings['social']['instagram'] = trim($_POST['instagram'] ?? '');
     $settings['social']['linkedin'] = trim($_POST['linkedin'] ?? '');
@@ -48,7 +52,7 @@ if (isset($_GET['del'])) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="tr" data-bs-theme="dark">
+<html lang="<?= htmlspecialchars(getLang()) ?>" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -76,16 +80,24 @@ if (isset($_GET['del'])) {
           <input type="hidden" name="save_settings" value="1" />
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="form-label">Hero Başlığı</label>
+              <label class="form-label">Hero Başlığı (TR)</label>
               <input type="text" name="hero_title" value="<?= htmlspecialchars($settings['hero_title'] ?? '') ?>" class="form-control" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Hero Başlığı (EN)</label>
+              <input type="text" name="hero_title_en" value="<?= htmlspecialchars($settings['hero_title_en'] ?? '') ?>" class="form-control" />
+            </div>
+            <div class="col-12">
+              <label class="form-label">Hero Alt Metin (TR)</label>
+              <textarea name="hero_subtitle" rows="2" class="form-control"><?= htmlspecialchars($settings['hero_subtitle'] ?? '') ?></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Hero Alt Metin (EN)</label>
+              <textarea name="hero_subtitle_en" rows="2" class="form-control"><?= htmlspecialchars($settings['hero_subtitle_en'] ?? '') ?></textarea>
             </div>
             <div class="col-md-6">
               <label class="form-label">İletişim E-postası</label>
               <input type="email" name="contact_email" value="<?= htmlspecialchars($settings['contact_email'] ?? '') ?>" class="form-control" />
-            </div>
-            <div class="col-12">
-              <label class="form-label">Hero Alt Metin</label>
-              <textarea name="hero_subtitle" rows="2" class="form-control"><?= htmlspecialchars($settings['hero_subtitle'] ?? '') ?></textarea>
             </div>
             <div class="col-12"><hr class="border-secondary" /></div>
             <div class="col-md-3">
