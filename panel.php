@@ -9,28 +9,49 @@ $stmtUser = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
 $stmtUser->execute([$user_id]);
 $user = $stmtUser->fetch();
 
-// Avatar yükleme işlemi
+// Avatar yükleme/gösterim yardımcıları
 $avatarDir = __DIR__ . '/assets/avatars';
 if (!is_dir($avatarDir)) { @mkdir($avatarDir, 0775, true); }
-$avatarPath = $avatarDir . "/user_{$user_id}.png";
-$avatarUrl = 'assets/avatars/user_' . $user_id . '.png';
+function currentAvatar(int $uid, string $dir): array {
+    $exts = ['png','jpg','jpeg','gif'];
+    foreach ($exts as $ext) {
+        $p = "$dir/user_{$uid}.{$ext}";
+        if (file_exists($p)) {
+            return ['path' => $p, 'url' => "assets/avatars/user_{$uid}.{$ext}"];
+        }
+    }
+    return ['path' => "$dir/user_{$uid}.png", 'url' => "assets/avatars/user_{$uid}.png"]; // varsayılan hedef
+}
+$avatar = currentAvatar($user_id, $avatarDir);
+
 if (isset($_POST['__avatar_upload']) && isset($_FILES['avatar']) && is_uploaded_file($_FILES['avatar']['tmp_name'])) {
-    $info = getimagesize($_FILES['avatar']['tmp_name']);
+    $info = @getimagesize($_FILES['avatar']['tmp_name']);
     if ($info && in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF], true)) {
-        // PNG olarak kaydet
-        $img = imagecreatefromstring(file_get_contents($_FILES['avatar']['tmp_name']));
-        if ($img) {
-            // Kare kırp ve küçült
-            $w = imagesx($img); $h = imagesy($img); $size = min($w,$h);
-            $srcX = (int)(($w - $size)/2); $srcY = (int)(($h - $size)/2);
-            $dst = imagecreatetruecolor(256,256);
-            imagecopyresampled($dst, $img, 0,0, $srcX,$srcY, 256,256, $size,$size);
-            imagepng($dst, $avatarPath, 8);
-            imagedestroy($dst);
-            imagedestroy($img);
+        $ext = image_type_to_extension($info[2], false); // jpeg|png|gif
+        $targetPng = $avatarDir . "/user_{$user_id}.png";
+        $targetRaw = $avatarDir . "/user_{$user_id}.{$ext}";
+
+        if (function_exists('imagecreatefromstring') && function_exists('imagecreatetruecolor') && function_exists('imagecopyresampled') && function_exists('imagepng')) {
+            $img = @imagecreatefromstring(file_get_contents($_FILES['avatar']['tmp_name']));
+            if ($img) {
+                $w = imagesx($img); $h = imagesy($img); $size = min($w,$h);
+                $srcX = (int)(($w - $size)/2); $srcY = (int)(($h - $size)/2);
+                $dst = imagecreatetruecolor(256,256);
+                imagecopyresampled($dst, $img, 0,0, $srcX,$srcY, 256,256, $size,$size);
+                @imagepng($dst, $targetPng, 8);
+                @imagedestroy($dst);
+                @imagedestroy($img);
+                // Eski farklı uzantılı avatarları temizle
+                foreach (['jpg','jpeg','gif'] as $e) { $old = $avatarDir . "/user_{$user_id}.{$e}"; if (file_exists($old)) @unlink($old); }
+            } else {
+                // Çözümlenemedi, ham dosyayı koy
+                @move_uploaded_file($_FILES['avatar']['tmp_name'], $targetRaw);
+                if ($ext !== 'png' && file_exists($targetPng)) @unlink($targetPng);
+            }
         } else {
-            // doğrudan kopyala fallback
-            move_uploaded_file($_FILES['avatar']['tmp_name'], $avatarPath);
+            // GD yok: doğrudan kopyala
+            @move_uploaded_file($_FILES['avatar']['tmp_name'], $targetRaw);
+            if ($ext !== 'png' && file_exists($targetPng)) @unlink($targetPng);
         }
     }
     header('Location: panel.php');
@@ -169,7 +190,7 @@ if (!empty($user['name'])) {
   $parts = preg_split('/\s+/', trim($user['name']));
   $initials = strtoupper(mb_substr($parts[0] ?? '', 0, 1) . mb_substr(end($parts) ?: '', 0, 1));
 }
-$hasAvatar = file_exists($avatarPath);
+$hasAvatar = file_exists($avatar['path']);
 ?>
 
 <!DOCTYPE html>
@@ -190,7 +211,7 @@ $hasAvatar = file_exists($avatarPath);
         <a class="d-flex align-items-center gap-2 text-decoration-none text-white" href="#" id="avatarMenu" data-bs-toggle="dropdown" aria-expanded="false">
           <div class="rounded-circle bg-info d-inline-flex justify-content-center align-items-center overflow-hidden" style="width:36px;height:36px;">
             <?php if ($hasAvatar): ?>
-              <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="avatar" style="width:36px;height:36px;object-fit:cover;" />
+              <img src="<?= htmlspecialchars($avatar['url']) ?>" alt="avatar" style="width:36px;height:36px;object-fit:cover;" />
             <?php else: ?>
               <span class="fw-bold text-dark"><?= htmlspecialchars($initials ?: 'U') ?></span>
             <?php endif; ?>
