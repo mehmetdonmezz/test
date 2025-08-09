@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/config.php';
+
 if (isset($_SESSION["user_id"])) {
     header("Location: panel.php");
     exit;
@@ -21,34 +22,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif ($password !== $password_confirm) {
         $error = "Şifreler uyuşmuyor.";
     } else {
-        $conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
-        if ($conn->connect_error) {
-            die("Bağlantı hatası: " . $conn->connect_error);
-        }
-
-        // E-posta daha önce kayıtlı mı kontrol et
-        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $stmt->store_result();
-
-        if ($stmt->num_rows > 0) {
-            $error = "Bu e-posta zaten kayıtlı.";
-        } else {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-            $insert = $conn->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
-            $insert->bind_param("sss", $name, $email, $hashed_password);
-
-            if ($insert->execute()) {
-                $success = "Kayıt başarılı! Giriş yapabilirsiniz.";
+        try {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+            $stmt->execute([$email]);
+            if ($stmt->fetch()) {
+                $error = "Bu e-posta zaten kayıtlı.";
             } else {
-                $error = "Kayıt sırasında bir hata oluştu.";
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $insert = $pdo->prepare("INSERT INTO users (name, email, password, is_admin) VALUES (?, ?, ?, 0)");
+                if ($insert->execute([$name, $email, $hashed_password])) {
+                    $success = "Kayıt başarılı! Giriş yapabilirsiniz.";
+                } else {
+                    $error = "Kayıt sırasında bir hata oluştu.";
+                }
             }
-            $insert->close();
+        } catch (Throwable $e) {
+            $error = "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
         }
-        $stmt->close();
-        $conn->close();
     }
 }
 ?>
@@ -92,7 +82,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </form>
 
     <p class="mt-3 text-center">
-      Hesabın var mı? <a href="login.php" class="text-info">Giriş Yap</a>
+      Hesabın var mı? <a href="login.php" class="text-dark fw-bold">Giriş Yap</a>
     </p>
   </div>
 

@@ -1,27 +1,17 @@
 <?php
-session_start();
-if (!isset($_SESSION["user_id"]) || $_SESSION["is_admin"] != 1) {
-    header("Location: login.php");
-    exit;
-}
+require_once __DIR__ . '/config.php';
+requireAdmin();
 
-$conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
-if ($conn->connect_error) {
-    die("Bağlantı hatası: " . $conn->connect_error);
-}
-
-$error = "";
-$success = "";
-
-// ID ile kullanıcıyı al
 if (!isset($_GET["id"])) {
     header("Location: admin.php");
     exit;
 }
 
-$user_id = intval($_GET["id"]);
+$user_id = (int)($_GET["id"]);
 
-// Düzenleme işlemi
+$error = "";
+$success = "";
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $name = trim($_POST["name"] ?? "");
     $email = trim($_POST["email"] ?? "");
@@ -30,26 +20,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (!$name || !$email) {
         $error = "İsim ve e-posta zorunludur.";
     } else {
-        // Kullanıcıyı güncelle
-        $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, is_admin = ? WHERE id = ?");
-        $stmt->bind_param("ssii", $name, $email, $is_admin, $user_id);
-        if ($stmt->execute()) {
+        $stmt = $pdo->prepare("UPDATE users SET name = ?, email = ?, is_admin = ? WHERE id = ?");
+        if ($stmt->execute([$name, $email, $is_admin, $user_id])) {
             $success = "Kullanıcı başarıyla güncellendi.";
         } else {
             $error = "Güncelleme sırasında hata oluştu.";
         }
-        $stmt->close();
     }
 }
 
-// Güncel kullanıcı bilgilerini çek
-$stmt = $conn->prepare("SELECT name, email, is_admin FROM users WHERE id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$user = $result->fetch_assoc();
-$stmt->close();
-$conn->close();
+$stmt = $pdo->prepare("SELECT name, email, is_admin FROM users WHERE id = ?");
+$stmt->execute([$user_id]);
+$user = $stmt->fetch();
 
 if (!$user) {
     header("Location: admin.php");

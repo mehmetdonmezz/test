@@ -1,17 +1,11 @@
 <?php
-session_start();
-if (!isset($_SESSION["user_id"])) {
-    header("Location: login.php");
-    exit;
-}
-$conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
+require_once __DIR__ . '/config.php';
+requireAuth();
 
-$user_id = $_SESSION["user_id"];
-$stmt = $conn->prepare("SELECT * FROM patients WHERE user_id = ?");
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
-$data = $result->fetch_assoc();
+$user_id = (int)$_SESSION["user_id"];
+$stmt = $pdo->prepare("SELECT hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar FROM patient_info WHERE user_id = ?");
+$stmt->execute([$user_id]);
+$data = $stmt->fetch();
 ?>
 
 <!DOCTYPE html>
@@ -27,9 +21,11 @@ $data = $result->fetch_assoc();
       <div class="card-body">
         <h3 class="card-title text-center mb-4">Hasta Bilgileri</h3>
         <?php if ($data): ?>
-          <p><strong>Adı:</strong> <?= htmlspecialchars($data["patient_name"]) ?></p>
-          <p><strong>Doğum Tarihi:</strong> <?= $data["birth_date"] ?></p>
-          <p><strong>Durumu:</strong> <?= nl2br(htmlspecialchars($data["condition"])) ?></p>
+          <p><strong>Adı:</strong> <?= htmlspecialchars($data["hasta_adi"]) ?></p>
+          <p><strong>Doğum Tarihi:</strong> <?= htmlspecialchars($data["hasta_dogum"]) ?></p>
+          <p><strong>Kan Grubu:</strong> <?= htmlspecialchars($data["hasta_kan"]) ?></p>
+          <p><strong>İlaçlar:</strong> <?= nl2br(htmlspecialchars($data["hasta_ilac"])) ?></p>
+          <p><strong>Notlar:</strong> <?= nl2br(htmlspecialchars($data["hasta_notlar"])) ?></p>
         <?php else: ?>
           <div class="alert alert-warning text-center">Kayıtlı hasta bilgisi bulunamadı.</div>
         <?php endif; ?>

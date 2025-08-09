@@ -1,38 +1,14 @@
 <?php
-session_start();
-if (!isset($_SESSION["user_id"])) {
-    header("Location: login.php");
-    exit;
-}
+require_once __DIR__ . '/config.php';
+requireAdmin();
 
-$conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
-if ($conn->connect_error) {
-    die("Bağlantı hatası: " . $conn->connect_error);
-}
-
-// Admin kontrolü
-$user_id = $_SESSION["user_id"];
-$stmtAdmin = $conn->prepare("SELECT is_admin FROM users WHERE id = ?");
-$stmtAdmin->bind_param("i", $user_id);
-$stmtAdmin->execute();
-$resultAdmin = $stmtAdmin->get_result();
-$userAdmin = $resultAdmin->fetch_assoc();
-$stmtAdmin->close();
-
-if (!$userAdmin || $userAdmin['is_admin'] != 1) {
-    echo "Bu sayfaya erişim yetkiniz yok.";
-    exit;
-}
-
-// Kullanıcı + hasta bilgilerini çek
 $sql = "
-SELECT u.id as user_id, u.name, u.email, u.is_admin, 
+SELECT u.id as user_id, u.name, u.email, u.is_admin,
        p.hasta_adi, p.hasta_dogum, p.hasta_kan, p.hasta_ilac, p.hasta_notlar
 FROM users u
 LEFT JOIN patient_info p ON u.id = p.user_id
 ORDER BY u.id ASC";
-
-$result = $conn->query($sql);
+$rows = $pdo->query($sql)->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -64,7 +40,7 @@ $result = $conn->query($sql);
             </tr>
         </thead>
         <tbody>
-            <?php while($row = $result->fetch_assoc()): ?>
+            <?php foreach($rows as $row): ?>
             <tr>
                 <td><?= htmlspecialchars($row['user_id']) ?></td>
                 <td><?= htmlspecialchars($row['name']) ?></td>
@@ -80,14 +56,10 @@ $result = $conn->query($sql);
                     <a href="admin_delete_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Kullanıcıyı silmek istediğinize emin misiniz?')">Sil</a>
                 </td>
             </tr>
-            <?php endwhile; ?>
+            <?php endforeach; ?>
         </tbody>
     </table>
 </div>
 
 </body>
 </html>
-
-<?php
-$conn->close();
-?>

@@ -1,29 +1,17 @@
 <?php
-session_start();
-if (!isset($_SESSION["user_id"])) {
-    header("Location: login.php");
-    exit;
-}
+require_once __DIR__ . '/config.php';
+requireAuth();
 
-$conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
-if ($conn->connect_error) {
-    die("Bağlantı hatası: " . $conn->connect_error);
-}
+$user_id = (int)$_SESSION["user_id"];
 
-$user_id = $_SESSION["user_id"];
-
-// Kullanıcı bilgilerini çek
-$stmtUser = $conn->prepare("SELECT name, email FROM users WHERE id = ?");
-$stmtUser->bind_param("i", $user_id);
-$stmtUser->execute();
-$resultUser = $stmtUser->get_result();
-$user = $resultUser->fetch_assoc();
-$stmtUser->close();
+// Kullanıcı bilgileri
+$stmtUser = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
+$stmtUser->execute([$user_id]);
+$user = $stmtUser->fetch();
 
 $infoSaved = false;
 $error = "";
 
-// Hasta bilgileri form post işlemi
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $hasta_adi = trim($_POST["hasta_adi"] ?? "");
     $hasta_dogum = trim($_POST["hasta_dogum"] ?? "");
@@ -34,40 +22,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if (!$hasta_adi || !$hasta_dogum) {
         $error = "Hasta adı ve doğum tarihi zorunludur.";
     } else {
-        // Kayıt var mı kontrol et
-        $stmtCheck = $conn->prepare("SELECT id FROM patient_info WHERE user_id = ?");
-        $stmtCheck->bind_param("i", $user_id);
-        $stmtCheck->execute();
-        $stmtCheck->store_result();
+        // Var mı?
+        $stmtCheck = $pdo->prepare("SELECT id FROM patient_info WHERE user_id = ?");
+        $stmtCheck->execute([$user_id]);
+        $exists = $stmtCheck->fetch();
 
-        if ($stmtCheck->num_rows > 0) {
-            // Güncelle
-            $stmtUpdate = $conn->prepare("UPDATE patient_info SET hasta_adi=?, hasta_dogum=?, hasta_kan=?, hasta_ilac=?, hasta_notlar=? WHERE user_id=?");
-            $stmtUpdate->bind_param("sssssi", $hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar, $user_id);
-            $stmtUpdate->execute();
-            $stmtUpdate->close();
+        if ($exists) {
+            $stmtUpdate = $pdo->prepare("UPDATE patient_info SET hasta_adi=?, hasta_dogum=?, hasta_kan=?, hasta_ilac=?, hasta_notlar=? WHERE user_id=?");
+            $stmtUpdate->execute([$hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar, $user_id]);
         } else {
-            // Yeni kayıt
-            $stmtInsert = $conn->prepare("INSERT INTO patient_info (user_id, hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmtInsert->bind_param("isssss", $user_id, $hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar);
-            $stmtInsert->execute();
-            $stmtInsert->close();
+            $stmtInsert = $pdo->prepare("INSERT INTO patient_info (user_id, hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmtInsert->execute([$user_id, $hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar]);
         }
-        $stmtCheck->close();
-
         $infoSaved = true;
     }
 }
 
-// Kaydedilmiş hasta bilgilerini çek
-$stmtInfo = $conn->prepare("SELECT hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar FROM patient_info WHERE user_id = ?");
-$stmtInfo->bind_param("i", $user_id);
-$stmtInfo->execute();
-$resultInfo = $stmtInfo->get_result();
-$patient = $resultInfo->fetch_assoc();
-$stmtInfo->close();
-
-$conn->close();
+$stmtInfo = $pdo->prepare("SELECT hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar FROM patient_info WHERE user_id = ?");
+$stmtInfo->execute([$user_id]);
+$patient = $stmtInfo->fetch();
 ?>
 
 <!DOCTYPE html>
@@ -83,7 +56,10 @@ $conn->close();
     <a class="navbar-brand" href="#">ARDİO</a>
     <div class="collapse navbar-collapse">
       <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><span class="nav-link">Hoşgeldin, <?= htmlspecialchars($user["name"]) ?></span></li>
+        <li class="nav-item"><span class="nav-link">Hoşgeldin, <?= htmlspecialchars($user["name"] ?? "") ?></span></li>
+        <?php if (isAdmin()): ?>
+          <li class="nav-item"><a class="nav-link" href="admin.php">Admin</a></li>
+        <?php endif; ?>
         <li class="nav-item"><a class="nav-link" href="logout.php">Çıkış Yap</a></li>
       </ul>
     </div>

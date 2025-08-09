@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/config.php';
+
 if (isset($_SESSION["user_id"])) {
     header("Location: panel.php");
     exit;
@@ -8,40 +9,31 @@ if (isset($_SESSION["user_id"])) {
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST["email"] ?? "";
+    $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
 
-    // Şifreyi SHA-256 ile hash'le
-    $hashedPassword = hash("sha256", $password);
+    try {
+        $stmt = $pdo->prepare("SELECT id, name, email, password, is_admin FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-    $conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
-    if ($conn->connect_error) {
-        die("Bağlantı hatası: " . $conn->connect_error);
-    }
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION["user_id"] = $user["id"];
+            $_SESSION["user_name"] = $user["name"];
+            $_SESSION["is_admin"] = $user["is_admin"];
 
-    $stmt = $conn->prepare("SELECT id, name, is_admin FROM users WHERE email = ? AND password = ?");
-    $stmt->bind_param("ss", $email, $hashedPassword);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($row = $result->fetch_assoc()) {
-        $_SESSION["user_id"] = $row["id"];
-        $_SESSION["user_name"] = $row["name"];
-        $_SESSION["is_admin"] = $row["is_admin"];
-
-        // Admin ise admin paneline yönlendir
-        if ($row["is_admin"]) {
-            header("Location: admin.php");
+            if ((int)$user["is_admin"] === 1) {
+                header("Location: admin.php");
+            } else {
+                header("Location: panel.php");
+            }
+            exit;
         } else {
-            header("Location: panel.php");
+            $error = "Hatalı şifre veya e-posta.";
         }
-        exit;
-    } else {
-        $error = "Hatalı şifre veya e-posta.";
+    } catch (Throwable $e) {
+        $error = "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
     }
-
-    $stmt->close();
-    $conn->close();
 }
 ?>
 
@@ -74,7 +66,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </form>
 
     <p class="mt-3 text-center">
-      Hesabın yok mu? <a href="register.php" class="text-info">Kayıt Ol</a>
+      Hesabın yok mu? <a href="register.php" class="text-dark fw-bold">Kayıt Ol</a>
     </p>
   </div>
 
