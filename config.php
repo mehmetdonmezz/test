@@ -36,3 +36,16 @@ function requireAdmin(): void {
         exit;
     }
 }
+
+// Public NFC/QR profil bağlantısı için HMAC tabanlı kod
+$PUBLIC_LINK_SECRET = getenv('PUBLIC_LINK_SECRET') ?: 'change-this-secret-please-ardio';
+
+function makePublicCode(int $userId): string {
+    global $PUBLIC_LINK_SECRET;
+    return hash_hmac('sha256', (string)$userId, $PUBLIC_LINK_SECRET);
+}
+
+function verifyPublicCode(int $userId, string $code): bool {
+    $expected = makePublicCode($userId);
+    return hash_equals($expected, $code);
+}

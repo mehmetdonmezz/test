@@ -41,6 +41,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 $stmtInfo = $pdo->prepare("SELECT hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar FROM patient_info WHERE user_id = ?");
 $stmtInfo->execute([$user_id]);
 $patient = $stmtInfo->fetch();
+
+// Public profil linki ve QR
+$code = makePublicCode($user_id);
+$publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
+    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
+    $_SERVER['HTTP_HOST'] ?? 'localhost',
+    rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/.'),
+    $user_id,
+    $code
+);
+$qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($publicUrl);
 ?>
 
 <!DOCTYPE html>
@@ -66,50 +77,70 @@ $patient = $stmtInfo->fetch();
   </nav>
 
   <main class="container py-5">
-    <h2 class="mb-4">Hasta Bilgileri</h2>
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <h2 class="mb-4">Hasta Bilgileri</h2>
 
-    <?php if ($error): ?>
-      <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-    <?php elseif ($infoSaved): ?>
-      <div class="alert alert-success">Bilgiler başarıyla kaydedildi.</div>
-    <?php endif; ?>
+        <?php if ($error): ?>
+          <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+        <?php elseif ($infoSaved): ?>
+          <div class="alert alert-success">Bilgiler başarıyla kaydedildi.</div>
+        <?php endif; ?>
 
-    <form method="POST" action="panel.php" class="mb-5">
-      <div class="mb-3">
-        <label for="hasta_adi" class="form-label">Hasta Adı Soyadı</label>
-        <input type="text" id="hasta_adi" name="hasta_adi" class="form-control" required value="<?= htmlspecialchars($patient["hasta_adi"] ?? "") ?>" />
-      </div>
-      <div class="mb-3">
-        <label for="hasta_dogum" class="form-label">Doğum Tarihi</label>
-        <input type="date" id="hasta_dogum" name="hasta_dogum" class="form-control" required value="<?= htmlspecialchars($patient["hasta_dogum"] ?? "") ?>" />
-      </div>
-      <div class="mb-3">
-        <label for="hasta_kan" class="form-label">Kan Grubu</label>
-        <input type="text" id="hasta_kan" name="hasta_kan" class="form-control" value="<?= htmlspecialchars($patient["hasta_kan"] ?? "") ?>" />
-      </div>
-      <div class="mb-3">
-        <label for="hasta_ilac" class="form-label">İlaçlar</label>
-        <textarea id="hasta_ilac" name="hasta_ilac" class="form-control" rows="3"><?= htmlspecialchars($patient["hasta_ilac"] ?? "") ?></textarea>
-      </div>
-      <div class="mb-3">
-        <label for="hasta_notlar" class="form-label">Notlar</label>
-        <textarea id="hasta_notlar" name="hasta_notlar" class="form-control" rows="3"><?= htmlspecialchars($patient["hasta_notlar"] ?? "") ?></textarea>
-      </div>
-      <button type="submit" class="btn btn-success">Kaydet</button>
-    </form>
+        <form method="POST" action="panel.php" class="mb-5">
+          <div class="mb-3">
+            <label for="hasta_adi" class="form-label">Hasta Adı Soyadı</label>
+            <input type="text" id="hasta_adi" name="hasta_adi" class="form-control" required value="<?= htmlspecialchars($patient["hasta_adi"] ?? "") ?>" />
+          </div>
+          <div class="mb-3">
+            <label for="hasta_dogum" class="form-label">Doğum Tarihi</label>
+            <input type="date" id="hasta_dogum" name="hasta_dogum" class="form-control" required value="<?= htmlspecialchars($patient["hasta_dogum"] ?? "") ?>" />
+          </div>
+          <div class="mb-3">
+            <label for="hasta_kan" class="form-label">Kan Grubu</label>
+            <input type="text" id="hasta_kan" name="hasta_kan" class="form-control" value="<?= htmlspecialchars($patient["hasta_kan"] ?? "") ?>" />
+          </div>
+          <div class="mb-3">
+            <label for="hasta_ilac" class="form-label">İlaçlar</label>
+            <textarea id="hasta_ilac" name="hasta_ilac" class="form-control" rows="3"><?= htmlspecialchars($patient["hasta_ilac"] ?? "") ?></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="hasta_notlar" class="form-label">Notlar</label>
+            <textarea id="hasta_notlar" name="hasta_notlar" class="form-control" rows="3"><?= htmlspecialchars($patient["hasta_notlar"] ?? "") ?></textarea>
+          </div>
+          <button type="submit" class="btn btn-success">Kaydet</button>
+        </form>
 
-    <?php if ($patient): ?>
-      <h3>Kaydedilmiş Hasta Bilgileri</h3>
-      <ul class="list-group bg-secondary text-white p-3 rounded">
-        <li><strong>Adı Soyadı:</strong> <?= htmlspecialchars($patient["hasta_adi"]) ?></li>
-        <li><strong>Doğum Tarihi:</strong> <?= htmlspecialchars($patient["hasta_dogum"]) ?></li>
-        <li><strong>Kan Grubu:</strong> <?= htmlspecialchars($patient["hasta_kan"]) ?></li>
-        <li><strong>İlaçlar:</strong> <?= nl2br(htmlspecialchars($patient["hasta_ilac"])) ?></li>
-        <li><strong>Notlar:</strong> <?= nl2br(htmlspecialchars($patient["hasta_notlar"])) ?></li>
-      </ul>
-    <?php endif; ?>
+        <?php if ($patient): ?>
+          <h3>Kaydedilmiş Hasta Bilgileri</h3>
+          <ul class="list-group bg-secondary text-white p-3 rounded">
+            <li><strong>Adı Soyadı:</strong> <?= htmlspecialchars($patient["hasta_adi"]) ?></li>
+            <li><strong>Doğum Tarihi:</strong> <?= htmlspecialchars($patient["hasta_dogum"]) ?></li>
+            <li><strong>Kan Grubu:</strong> <?= htmlspecialchars($patient["hasta_kan"]) ?></li>
+            <li><strong>İlaçlar:</strong> <?= nl2br(htmlspecialchars($patient["hasta_ilac"])) ?></li>
+            <li><strong>Notlar:</strong> <?= nl2br(htmlspecialchars($patient["hasta_notlar"])) ?></li>
+          </ul>
+        <?php endif; ?>
 
-    <p class="mt-4 text-muted small">Kişisel hasta bilgilerinizi buradan güncelleyebilirsiniz.</p>
+        <p class="mt-4 text-muted small">Kişisel hasta bilgilerinizi buradan güncelleyebilirsiniz.</p>
+      </div>
+      <div class="col-lg-4">
+        <div class="card bg-secondary text-white">
+          <div class="card-body">
+            <h5 class="card-title">NFC/QR Acil Profil</h5>
+            <p class="small">Bu QR kodu NFC bilekliği/etiketi ile eşleyin. Kod, hastanın acil profil sayfasına yönlendirir.</p>
+            <div class="text-center my-3">
+              <img src="<?= $qrApi ?>" alt="QR" class="img-fluid rounded border border-1 border-light p-1 bg-white" />
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Bağlantı</label>
+              <input type="text" class="form-control form-control-sm" readonly value="<?= htmlspecialchars($publicUrl) ?>" />
+            </div>
+            <a class="btn btn-outline-light btn-sm" href="<?= htmlspecialchars($publicUrl) ?>" target="_blank" rel="noopener">Acil Profili Aç</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
 </body>
