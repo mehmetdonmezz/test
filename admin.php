@@ -104,6 +104,7 @@ function q($k, $v) {
     <a class="navbar-brand" href="index.php">ARDİO Admin</a>
     <div class="d-flex gap-2">
       <a class="btn btn-outline-light btn-sm" href="admin_site.php">Site Ayarları</a>
+      <a class="btn btn-outline-light btn-sm" href="admin_analytics.php">Analitik</a>
       <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span></button>
       <?php if (isset($_SESSION['impersonator_admin_id'])): ?>
         <a href="admin_unimpersonate.php" class="btn btn-warning btn-sm">Admin’e Geri Dön</a>
