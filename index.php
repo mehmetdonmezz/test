@@ -1,5 +1,12 @@
 <?php
 session_start();
+require_once __DIR__ . '/config.php';
+$site = getSiteSettings();
+$heroTitle = $site['hero_title'] ?? 'Kaybolmayı İmkânsız Kılan Bileklik';
+$heroSubtitle = $site['hero_subtitle'] ?? '';
+$contactEmail = $site['contact_email'] ?? 'merhaba@ardiodigital.com';
+$social = $site['social'] ?? ['twitter'=>'','instagram'=>'','linkedin'=>'','youtube'=>''];
+$gallery = $site['gallery'] ?? [];
 ?>
 <!DOCTYPE html>
 <html lang="tr" data-bs-theme="dark">
@@ -49,8 +56,8 @@ session_start();
     <div class="container py-4">
       <div class="row align-items-center g-4">
         <div class="col-lg-7">
-          <h1 class="display-5 fw-bold mb-3">Kaybolmayı <span class="text-info">İmkânsız</span> Kılan Bileklik</h1>
-          <p class="lead mb-4 opacity-75">ARDİO, Alzheimer ve zihinsel engelli bireyler için geliştirilmiş akıllı bileklik ve acil bilgi platformudur. NFC/QR ile saniyeler içinde kimlik ve iletişim bilgilerine ulaşılır.</p>
+          <h1 class="display-5 fw-bold mb-3"><?= htmlspecialchars($heroTitle) ?></h1>
+          <p class="lead mb-4 opacity-75"><?= htmlspecialchars($heroSubtitle) ?></p>
           <div class="d-flex flex-wrap gap-2">
             <a href="#how" class="btn btn-primary btn-lg"><i class="bi bi-lightning-charge-fill me-1"></i>Hemen İncele</a>
             <a href="#contact" class="btn btn-outline-light btn-lg"><i class="bi bi-envelope me-1"></i>İletişime Geç</a>
@@ -149,18 +156,17 @@ session_start();
         <h2 class="h2 mt-2">Ürün Görselleri</h2>
         <p class="text-white-50">Bileklik, QR etiket ve acil profil ekranından görüntüler.</p>
       </div>
-      <div class="row g-3">
-        <div class="col-6 col-md-4">
-          <img src="https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop" class="img-fluid gallery-img" alt="Bileklik" />
+      <?php if (!empty($gallery)): ?>
+        <div class="row g-3">
+          <?php foreach ($gallery as $img): ?>
+            <div class="col-6 col-md-4">
+              <img src="<?= htmlspecialchars($img) ?>" class="img-fluid gallery-img" alt="galeri" />
+            </div>
+          <?php endforeach; ?>
         </div>
-        <div class="col-6 col-md-4">
-          <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1200&auto=format&fit=crop" class="img-fluid gallery-img" alt="QR Etiket" />
-        </div>
-        <div class="col-6 col-md-4">
-          <img src="https://images.unsplash.com/photo-1516726817505-f5ed825624d8?q=80&w=1200&auto=format&fit=crop" class="img-fluid gallery-img" alt="Acil Profil Ekranı" />
-        </div>
-      </div>
-      <div class="text-center mt-3 small text-white-50">Görseller temsili olup ürün prototipini göstermektedir.</div>
+      <?php else: ?>
+        <div class="text-center text-white-50">Henüz galeri görseli eklenmemiş. Admin panelinden yükleyebilirsiniz.</div>
+      <?php endif; ?>
     </div>
   </section>
 
@@ -169,7 +175,7 @@ session_start();
     <div class="container text-center">
       <h3 class="h2 fw-bold text-primary mb-3">ARDİO ile tanışmak ister misin?</h3>
       <p class="text-white-50 mb-4">Girişimimize destek olmak, ürünü denemek ya da sadece selam vermek için bize yaz.</p>
-      <a href="mailto:merhaba@ardiodigital.com" class="btn btn-light btn-lg"><i class="bi bi-envelope me-1"></i>merhaba@ardiodigital.com</a>
+      <a href="mailto:<?= htmlspecialchars($contactEmail) ?>" class="btn btn-light btn-lg"><i class="bi bi-envelope me-1"></i><?= htmlspecialchars($contactEmail) ?></a>
     </div>
   </section>
 
@@ -202,10 +208,10 @@ session_start();
         <div class="col-6 col-md-4">
           <div class="fw-semibold mb-2">Sosyal</div>
           <div class="d-flex gap-2">
-            <a class="btn btn-outline-light btn-sm" href="#" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
-            <a class="btn btn-outline-light btn-sm" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
-            <a class="btn btn-outline-light btn-sm" href="#" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
-            <a class="btn btn-outline-light btn-sm" href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+            <?php if (!empty($social['twitter'])): ?><a class="btn btn-outline-light btn-sm" href="<?= htmlspecialchars($social['twitter']) ?>" aria-label="Twitter" target="_blank"><i class="bi bi-twitter"></i></a><?php endif; ?>
+            <?php if (!empty($social['instagram'])): ?><a class="btn btn-outline-light btn-sm" href="<?= htmlspecialchars($social['instagram']) ?>" aria-label="Instagram" target="_blank"><i class="bi bi-instagram"></i></a><?php endif; ?>
+            <?php if (!empty($social['linkedin'])): ?><a class="btn btn-outline-light btn-sm" href="<?= htmlspecialchars($social['linkedin']) ?>" aria-label="LinkedIn" target="_blank"><i class="bi bi-linkedin"></i></a><?php endif; ?>
+            <?php if (!empty($social['youtube'])): ?><a class="btn btn-outline-light btn-sm" href="<?= htmlspecialchars($social['youtube']) ?>" aria-label="YouTube" target="_blank"><i class="bi bi-youtube"></i></a><?php endif; ?>
           </div>
         </div>
       </div>
