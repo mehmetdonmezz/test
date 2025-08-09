@@ -14,6 +14,7 @@ function getLang(): string {
 function t(string $key): string {
     static $dict = [
         'tr' => [
+            // Public/emergency
             'emergency_profile' => 'Acil Profil',
             'viewed_via_qr' => 'Bu sayfa NFC/QR ile görüntülendi',
             'print_pdf' => 'PDF Yazdır',
@@ -29,7 +30,7 @@ function t(string $key): string {
             'medications' => 'İlaçlar',
             'other_info' => 'Diğer Bilgiler',
             'home' => 'Ana Sayfa',
-            // Auth
+            // Auth/common
             'sign_in' => 'Giriş Yap',
             'sign_up' => 'Kayıt Ol',
             'login_title' => 'Giriş Yap - ARDİO',
@@ -46,7 +47,6 @@ function t(string $key): string {
             'passwords_mismatch' => 'Şifreler uyuşmuyor.',
             'email_exists' => 'Bu e-posta zaten kayıtlı.',
             'register_success' => 'Kayıt başarılı! Giriş yapabilirsiniz.',
-            // Navbar/common
             'logout' => 'Çıkış Yap',
             'admin' => 'Admin',
             'panel' => 'Panel',
@@ -76,8 +76,55 @@ function t(string $key): string {
             'make_admin_selected' => 'Seçilenleri Admin Yap',
             'make_user_selected' => 'Seçilenleri Kullanıcı Yap',
             'select_all' => 'Tümünü Seç',
+            // Index/nav
+            'nav_features' => 'Özellikler',
+            'nav_how' => 'Nasıl Çalışır?',
+            'nav_gallery' => 'Görseller',
+            'nav_contact' => 'İletişim',
+            // Index/hero
+            'hero_cta_primary' => 'Hemen İncele',
+            'hero_cta_contact' => 'İletişime Geç',
+            'hero_privacy_note' => 'Gizlilik ve güvenlik önceliğimizdir.',
+            'hero_card_title' => 'Acil Bilgi Kartı',
+            'hero_card_desc' => 'Bileklik üzerindeki NFC/QR ile acil durum kartı anında görüntülenir.',
+            'hero_list_meds' => 'İlaçlar, alerjiler, kronik hastalıklar',
+            'hero_list_emergency' => 'Acil iletişim ve adres bilgileri',
+            'hero_list_doctor' => 'Doktor bilgileri',
+            'more' => 'Daha Fazla',
+            // Index/features
+            'features_badge' => 'Özellikler',
+            'features_heading' => 'Her Şey Düşünüldü',
+            'features_desc' => 'Kullanıcı dostu, güvenli ve hızlı.',
+            'feature1_title' => 'NFC & QR Entegrasyonu',
+            'feature1_desc' => 'Her akıllı telefonla uyumlu; internet bağlantısı olan herkes görebilir.',
+            'feature2_title' => 'Güvenlik Önceliği',
+            'feature2_desc' => 'HMAC ile imzalanmış bağlantılar ve yetkisiz erişime karşı koruma.',
+            'feature3_title' => 'Kolay Yönetim',
+            'feature3_desc' => 'Kullanıcı panelinden bilgileri hızla güncelleyin, QR’ı yazdırın.',
+            // Index/how
+            'how_badge' => 'Nasıl Çalışır?',
+            'how_heading' => '3 Adımda Güven',
+            'step1_title' => '1. Bilgileri Kaydet',
+            'step1_desc' => 'Hasta bilgilerini panelden güvenle doldurun.',
+            'step2_title' => '2. NFC/QR’ı Eşle',
+            'step2_desc' => 'Üretilen link/QR’ı bilekliğe/etikete koyun.',
+            'step3_title' => '3. Acil Durumda Erişim',
+            'step3_desc' => 'QR/NFC okutan kişi acil profile ulaşır.',
+            // Index/gallery
+            'gallery_badge' => 'Görseller',
+            'gallery_heading' => 'Ürün Görselleri',
+            'gallery_desc' => 'Bileklik, QR etiket ve acil profil ekranından görüntüler.',
+            'gallery_empty' => 'Henüz galeri görseli eklenmemiş. Admin panelinden yükleyebilirsiniz.',
+            // Index/contact
+            'contact_heading' => 'ARDİO ile tanışmak ister misin?',
+            'contact_desc' => 'Girişimimize destek olmak, ürünü denemek ya da sadece selam vermek için bize yaz.',
+            // Index/footer
+            'footer_tagline' => 'Genç zihinler, büyük işler. Acil durumlarda doğru bilgiye anında erişim.',
+            'quick_links' => 'Hızlı Linkler',
+            'social_heading' => 'Sosyal',
         ],
         'en' => [
+            // Public/emergency
             'emergency_profile' => 'Emergency Profile',
             'viewed_via_qr' => 'This page is opened via NFC/QR',
             'print_pdf' => 'Print PDF',
@@ -93,7 +140,7 @@ function t(string $key): string {
             'medications' => 'Medications',
             'other_info' => 'Other Info',
             'home' => 'Home',
-            // Auth
+            // Auth/common
             'sign_in' => 'Sign In',
             'sign_up' => 'Sign Up',
             'login_title' => 'Sign In - ARDİO',
@@ -110,7 +157,6 @@ function t(string $key): string {
             'passwords_mismatch' => "Passwords don't match.",
             'email_exists' => 'This email is already registered.',
             'register_success' => 'Registration successful! You can sign in.',
-            // Navbar/common
             'logout' => 'Logout',
             'admin' => 'Admin',
             'panel' => 'Panel',
@@ -140,6 +186,52 @@ function t(string $key): string {
             'make_admin_selected' => 'Make selected Admin',
             'make_user_selected' => 'Make selected User',
             'select_all' => 'Select All',
+            // Index/nav
+            'nav_features' => 'Features',
+            'nav_how' => 'How it Works?',
+            'nav_gallery' => 'Gallery',
+            'nav_contact' => 'Contact',
+            // Index/hero
+            'hero_cta_primary' => 'Explore Now',
+            'hero_cta_contact' => 'Contact Us',
+            'hero_privacy_note' => 'Privacy and security are our priority.',
+            'hero_card_title' => 'Emergency Info Card',
+            'hero_card_desc' => 'Emergency card is instantly shown via the NFC/QR on the bracelet.',
+            'hero_list_meds' => 'Medications, allergies, chronic conditions',
+            'hero_list_emergency' => 'Emergency contact and address information',
+            'hero_list_doctor' => 'Doctor information',
+            'more' => 'Learn More',
+            // Index/features
+            'features_badge' => 'Features',
+            'features_heading' => 'Everything Covered',
+            'features_desc' => 'User-friendly, secure and fast.',
+            'feature1_title' => 'NFC & QR Integration',
+            'feature1_desc' => 'Compatible with all smartphones; accessible to anyone online.',
+            'feature2_title' => 'Security First',
+            'feature2_desc' => 'HMAC-signed links and protection against unauthorized access.',
+            'feature3_title' => 'Easy Management',
+            'feature3_desc' => 'Quickly update info from the user panel, print the QR.',
+            // Index/how
+            'how_badge' => 'How it Works?',
+            'how_heading' => 'Trust in 3 Steps',
+            'step1_title' => '1. Save Information',
+            'step1_desc' => 'Fill in the patient info securely from the panel.',
+            'step2_title' => '2. Pair NFC/QR',
+            'step2_desc' => 'Place the generated link/QR on the bracelet/tag.',
+            'step3_title' => '3. Access in Emergency',
+            'step3_desc' => 'Anyone scanning QR/NFC reaches the emergency profile.',
+            // Index/gallery
+            'gallery_badge' => 'Gallery',
+            'gallery_heading' => 'Product Gallery',
+            'gallery_desc' => 'Bracelet, QR tag and emergency profile screenshots.',
+            'gallery_empty' => 'No gallery images yet. You can upload from the admin panel.',
+            // Index/contact
+            'contact_heading' => 'Would you like to meet ARDİO?',
+            'contact_desc' => 'To support our initiative, try the product or just say hi, write to us.',
+            // Index/footer
+            'footer_tagline' => 'Young minds, great work. Instant access to the right info in emergencies.',
+            'quick_links' => 'Quick Links',
+            'social_heading' => 'Social',
         ],
     ];
     $lang = getLang();
