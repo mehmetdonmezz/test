@@ -3,7 +3,6 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/lang.php';
 setLangFromRequest();
 
-// Beklenen parametreler: uid ve code (HMAC)
 $uid = isset($_GET['uid']) ? (int)$_GET['uid'] : 0;
 $code = $_GET['code'] ?? '';
 
@@ -13,7 +12,7 @@ if ($uid <= 0 || !$code || !verifyPublicCode($uid, $code)) {
     exit;
 }
 
-function parseNotes(?string $notes): array {
+function parseNotesRich(?string $notes): array {
     $meta = [
         'emergency_name' => '',
         'emergency_phone' => '',
@@ -22,48 +21,91 @@ function parseNotes(?string $notes): array {
         'doctor_phone' => '',
         'allergies' => '',
         'conditions' => '',
-        'extra' => ''
+        'extra' => '',
+        'gender' => '',
+        'height_cm' => '',
+        'weight_kg' => '',
+        'diagnosis' => '',
+        'last_visit' => '',
+        'last_doctor' => '',
+        'last_med' => '',
+        'coords' => '',
     ];
     if (!$notes) return $meta;
+
     $lines = preg_split("/\r?\n/", $notes);
     foreach ($lines as $line) {
         $t = trim($line);
         if ($t === '') continue;
-        if (stripos($t, 'Acil İletişim:') === 0) {
-            $val = trim(substr($t, strlen('Acil İletişim:')));
-            if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) {
-                $meta['emergency_name'] = trim($m[1]);
-                $meta['emergency_phone'] = trim($m[2]);
-            } else {
-                $meta['emergency_name'] = $val;
+        // Anahtar:Değer biçimlerini yakala
+        $pairs = [
+            'Acil İletişim:' => 'emergency',
+            'Acil Iletişim:' => 'emergency',
+            'Adres:' => 'address',
+            'Doktor:' => 'doctor',
+            'Alerjiler:' => 'allergies',
+            'Kronik Hastalıklar:' => 'conditions',
+            'Ek Notlar:' => 'extra',
+            'Cinsiyet:' => 'gender',
+            'Boy:' => 'height_cm',
+            'Kilo:' => 'weight_kg',
+            'Tanı:' => 'diagnosis',
+            'Tani:' => 'diagnosis',
+            'En Son Hastane Ziyareti:' => 'last_visit',
+            'Son Hastane:' => 'last_visit',
+            'En Son Görüştüğü Doktor:' => 'last_doctor',
+            'Son Doktor:' => 'last_doctor',
+            'En Son Aldığı İlaç:' => 'last_med',
+            'Son İlaç:' => 'last_med',
+            'Koordinat:' => 'coords',
+        ];
+        foreach ($pairs as $prefix => $key) {
+            if (stripos($t, $prefix) === 0) {
+                $val = trim(substr($t, strlen($prefix)));
+                if ($key === 'emergency') {
+                    if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) {
+                        $meta['emergency_name'] = trim($m[1]);
+                        $meta['emergency_phone'] = trim($m[2]);
+                    } else {
+                        $meta['emergency_name'] = $val;
+                    }
+                } elseif ($key === 'doctor') {
+                    if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) {
+                        $meta['doctor_name'] = trim($m[1]);
+                        $meta['doctor_phone'] = trim($m[2]);
+                    } else {
+                        $meta['doctor_name'] = $val;
+                    }
+                } else {
+                    $meta[$key] = $val;
+                }
+                continue 2;
             }
-        } elseif (stripos($t, 'Adres:') === 0) {
-            $meta['address'] = trim(substr($t, strlen('Adres:')));
-        } elseif (stripos($t, 'Doktor:') === 0) {
-            $val = trim(substr($t, strlen('Doktor:')));
-            if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) {
-                $meta['doctor_name'] = trim($m[1]);
-                $meta['doctor_phone'] = trim($m[2]);
-            } else {
-                $meta['doctor_name'] = $val;
-            }
-        } elseif (stripos($t, 'Alerjiler:') === 0) {
-            $meta['allergies'] = trim(substr($t, strlen('Alerjiler:')));
-        } elseif (stripos($t, 'Kronik Hastalıklar:') === 0) {
-            $meta['conditions'] = trim(substr($t, strlen('Kronik Hastalıklar:')));
-        } elseif (stripos($t, 'Ek Notlar:') === 0) {
-            $meta['extra'] = trim(substr($t, strlen('Ek Notlar:')));
         }
     }
     return $meta;
 }
 
-// Hasta bilgilerini getir
+// Hasta verisini getir
 $stmt = $pdo->prepare('SELECT p.hasta_adi, p.hasta_dogum, p.hasta_kan, p.hasta_ilac, p.hasta_notlar, u.name as user_name, u.email as user_email FROM patient_info p JOIN users u ON u.id = p.user_id WHERE p.user_id = ?');
 $stmt->execute([$uid]);
 $patient = $stmt->fetch();
-$meta = parseNotes($patient['hasta_notlar'] ?? null);
+$meta = parseNotesRich($patient['hasta_notlar'] ?? null);
 
+// Yaş hesapla
+$ageText = '';
+if (!empty($patient['hasta_dogum'])) {
+    try {
+        $dob = new DateTime($patient['hasta_dogum']);
+        $now = new DateTime('today');
+        $age = $dob->diff($now)->y;
+        $ageText = sprintf('%s (%d yaşında)', htmlspecialchars($patient['hasta_dogum']), (int)$age);
+    } catch (Throwable $e) {
+        $ageText = htmlspecialchars($patient['hasta_dogum']);
+    }
+}
+
+// Dinamik linkler
 $publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
     (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
     $_SERVER['HTTP_HOST'] ?? 'localhost',
@@ -71,151 +113,135 @@ $publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
     $uid,
     $code
 );
-$qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($publicUrl);
+$qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' . urlencode($publicUrl);
+
+$mapsQuery = $meta['coords'] ?: $meta['address'];
+$mapsUrl = $mapsQuery ? ('https://maps.google.com/?q=' . urlencode($mapsQuery)) : '#';
+$mapsEmbed = $mapsQuery ? ('https://maps.google.com/maps?q=' . urlencode($mapsQuery) . '&output=embed') : '';
+$emPhone = preg_replace('/\D+/', '', $meta['emergency_phone']);
 ?>
 <!DOCTYPE html>
-<html lang="<?= htmlspecialchars(getLang()) ?>">
+<html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title><?= t('emergency_profile') ?> - ARDİO</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
-  <style>
-    body { background: #f5f7fb; }
-    .hero { background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%); color: #fff; }
-    .badge-soft { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.35); }
-    .section-card { border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    .label { color: #6c757d; font-weight: 600; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARDİO Engelsiz Yaşam - Acil Sağlık Bilgileri</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+            padding: 24px;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .header { text-align: center; margin-bottom: 18px; color: #2c3e50; }
+        .header img.logo { width: 72px; height: 72px; object-fit: contain; }
+        .subtitle { color: #7f8c8d; margin-top: 4px; font-size: 14px; }
+        .qr { border: 1px solid #eee; border-radius: 8px; padding: 6px; background: #fff; }
+        .info-section { margin: 16px 0 20px; }
+        .section-title { background-color: #3498db; color: white; padding: 8px 14px; border-radius: 6px; font-size: 15px; margin-bottom: 12px; display: inline-block; }
+        .info-item { margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 8px; display: flex; gap: 12px; }
+        .label { font-weight: 600; color: #3498db; width: 40%; min-width: 140px; }
+        .value { color: #2c3e50; width: 60%; }
+        .emergency { background-color: #ffecec; padding: 14px; border-radius: 8px; margin-top: 16px; border-left: 4px solid #e74c3c; }
+        .action-buttons { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+        .btn { padding: 10px 14px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; flex-grow: 1; text-align: center; text-decoration: none; display: inline-block; }
+        .btn-call { background-color: #e74c3c; color: white; }
+        .btn-alert { background-color: #f39c12; color: white; }
+        .btn-location { background-color: #2ecc71; color: white; }
+        .map-container { margin-top: 12px; height: 220px; background-color: #eee; border-radius: 8px; overflow: hidden; position: relative; }
+        .map-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #7f8c8d; }
+        .footer { text-align: center; margin-top: 18px; font-size: 12px; color: #7f8c8d; }
+    </style>
 </head>
 <body>
-  <header class="hero py-4">
-    <div class="container">
-      <div class="d-flex flex-wrap align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-3">
-          <div class="rounded-circle bg-light text-primary d-flex justify-content-center align-items-center" style="width:56px;height:56px;">
-            <i class="bi bi-person-fill" style="font-size:28px;"></i>
-          </div>
-          <div>
-            <h1 class="h3 mb-1"><?= t('emergency_profile') ?></h1>
-            <div class="small opacity-75"><?= t('viewed_via_qr') ?></div>
-          </div>
+    <div class="card">
+        <div class="header">
+            <img class="logo" src="https://via.placeholder.com/80x80?text=ARDIO" alt="ARDİO Logo">
+            <h2>ARDİO Engelsiz Yaşam</h2>
+            <h3>Acil Sağlık Bilgileri</h3>
+            <div class="subtitle">Bu sayfa NFC/QR ile görüntülenmiştir.</div>
+            <div class="mt-2"><img class="qr" src="<?= $qrApi ?>" alt="QR" width="120" height="120"></div>
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <div class="dropdown">
-            <a class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown" href="#">Lang</a>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><a class="dropdown-item" href="?uid=<?= $uid ?>&code=<?= urlencode($code) ?>&lang=tr">Türkçe</a></li>
-              <li><a class="dropdown-item" href="?uid=<?= $uid ?>&code=<?= urlencode($code) ?>&lang=en">English</a></li>
-            </ul>
-          </div>
-          <a class="btn btn-outline-light btn-sm" target="_blank" href="p_print.php?uid=<?= $uid ?>&code=<?= urlencode($code) ?>"><i class="bi bi-printer me-1"></i><?= t('print_pdf') ?></a>
-          <a class="btn btn-light btn-sm" href="<?= htmlspecialchars($publicUrl) ?>" target="_blank"><i class="bi bi-link-45deg me-1"></i><?= t('open_link') ?></a>
+
+        <?php if ($patient): ?>
+        <div class="info-section">
+            <div class="section-title">Temel Bilgiler</div>
+            <div class="info-item"><span class="label">Adı Soyadı:</span><span class="value"><?= htmlspecialchars($patient['hasta_adi'] ?: '-') ?></span></div>
+            <div class="info-item"><span class="label">Doğum Tarihi:</span><span class="value"><?= $ageText ?: '-' ?></span></div>
+            <?php if ($meta['gender']): ?><div class="info-item"><span class="label">Cinsiyet:</span><span class="value"><?= htmlspecialchars($meta['gender']) ?></span></div><?php endif; ?>
+            <?php if ($meta['height_cm'] || $meta['weight_kg']): ?>
+              <div class="info-item"><span class="label">Boy/Kilo:</span><span class="value"><?= htmlspecialchars(trim(($meta['height_cm']?($meta['height_cm'].' cm'):'') . ($meta['weight_kg']?(' / '.$meta['weight_kg'].' kg'):'') )) ?></span></div>
+            <?php endif; ?>
         </div>
-      </div>
-    </div>
-  </header>
 
-  <main class="container py-4">
-    <?php if (!$patient): ?>
-      <div class="alert alert-warning">Not Found</div>
-    <?php else: ?>
-      <div class="row g-4">
-        <div class="col-lg-8">
-          <div class="card section-card mb-3">
-            <div class="card-body">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                  <h2 class="h4 mb-1"><?= htmlspecialchars($patient['hasta_adi']) ?></h2>
-                  <div class="d-flex flex-wrap gap-2 small">
-                    <span class="badge bg-primary-subtle text-primary border"><i class="bi bi-calendar2-heart me-1"></i><?= htmlspecialchars($patient['hasta_dogum']) ?></span>
-                    <span class="badge bg-danger-subtle text-danger border"><i class="bi bi-droplet-half me-1"></i><?= htmlspecialchars($patient['hasta_kan'] ?: '-') ?></span>
-                  </div>
-                </div>
-                <div class="text-center">
-                  <img src="<?= $qrApi ?>" alt="QR" class="rounded border bg-white p-1" />
-                  <div class="small text-muted mt-1">QR</div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="info-section">
+            <div class="section-title">Sağlık Bilgileri</div>
+            <div class="info-item"><span class="label">Kan Grubu:</span><span class="value"><?= htmlspecialchars($patient['hasta_kan'] ?: '-') ?></span></div>
+            <?php if ($meta['allergies']): ?><div class="info-item"><span class="label">Alerjileri:</span><span class="value"><?= htmlspecialchars($meta['allergies']) ?></span></div><?php endif; ?>
+            <?php if (!empty($patient['hasta_ilac'])): ?><div class="info-item"><span class="label">Kullandığı İlaçlar:</span><span class="value"><?= nl2br(htmlspecialchars($patient['hasta_ilac'])) ?></span></div><?php endif; ?>
+            <?php if ($meta['diagnosis'] ?: $meta['conditions']): ?><div class="info-item"><span class="label">Hastalığı/Tanısı:</span><span class="value"><?= htmlspecialchars($meta['diagnosis'] ?: $meta['conditions']) ?></span></div><?php endif; ?>
+        </div>
 
-          <div class="card section-card mb-3">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2"><i class="bi bi-telephone-outbound me-2 text-danger"></i><h3 class="h6 m-0"><?= t('emergency_contact') ?></h3></div>
-              <?php if ($meta['emergency_name'] || $meta['emergency_phone']): ?>
-                <p class="mb-1"><span class="label"><?= t('person') ?>:</span> <?= htmlspecialchars(trim($meta['emergency_name'])) ?></p>
-                <?php if ($meta['emergency_phone']): ?>
-                  <p class="mb-2"><span class="label"><?= t('phone') ?>:</span> <a class="text-decoration-none" href="tel:<?= htmlspecialchars($meta['emergency_phone']) ?>"><?= htmlspecialchars($meta['emergency_phone']) ?></a></p>
-                  <a href="tel:<?= htmlspecialchars($meta['emergency_phone']) ?>" class="btn btn-danger btn-sm"><i class="bi bi-telephone-fill me-1"></i><?= t('call_now') ?></a>
+        <?php if ($meta['address'] || $mapsEmbed): ?>
+        <div class="info-section">
+            <div class="section-title">Konum Bilgileri</div>
+            <?php if ($meta['address']): ?><div class="info-item"><span class="label">Ev Adresi:</span><span class="value"><?= nl2br(htmlspecialchars($meta['address'])) ?></span></div><?php endif; ?>
+            <div class="map-container">
+                <?php if ($mapsEmbed): ?>
+                    <iframe src="<?= htmlspecialchars($mapsEmbed) ?>" width="100%" height="100%" style="border:0;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <?php else: ?>
+                    <div class="map-placeholder">[Harita için adres/koordinat bilgisi gereklidir]</div>
                 <?php endif; ?>
-              <?php else: ?>
-                <p class="mb-1">Owner: <strong><?= htmlspecialchars($patient['user_name']) ?></strong></p>
-                <p class="mb-0">E‑mail: <a class="text-decoration-none" href="mailto:<?= htmlspecialchars($patient['user_email']) ?>"><?= htmlspecialchars($patient['user_email']) ?></a></p>
-              <?php endif; ?>
             </div>
-          </div>
+        </div>
+        <?php endif; ?>
 
-          <?php if ($meta['address']): ?>
-          <div class="card section-card mb-3">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2"><i class="bi bi-geo-alt me-2 text-primary"></i><h3 class="h6 m-0"><?= t('address') ?></h3></div>
-              <p class="mb-2"><?= nl2br(htmlspecialchars($meta['address'])) ?></p>
-              <a class="btn btn-outline-primary btn-sm" target="_blank" href="https://www.google.com/maps/search/?api=1&query=<?= urlencode($meta['address']) ?>"><i class="bi bi-map me-1"></i><?= t('open_maps') ?></a>
-            </div>
-          </div>
-          <?php endif; ?>
+        <?php if ($meta['last_visit'] || $meta['last_doctor'] || $meta['last_med']): ?>
+        <div class="info-section">
+            <div class="section-title">Son Tıbbi Kayıtlar</div>
+            <?php if ($meta['last_visit']): ?><div class="info-item"><span class="label">En Son Hastane Ziyareti:</span><span class="value"><?= htmlspecialchars($meta['last_visit']) ?></span></div><?php endif; ?>
+            <?php if ($meta['last_doctor']): ?><div class="info-item"><span class="label">En Son Görüştüğü Doktor:</span><span class="value"><?= htmlspecialchars($meta['last_doctor']) ?></span></div><?php endif; ?>
+            <?php if ($meta['last_med']): ?><div class="info-item"><span class="label">En Son Aldığı İlaç:</span><span class="value"><?= htmlspecialchars($meta['last_med']) ?></span></div><?php endif; ?>
+        </div>
+        <?php endif; ?>
 
-          <?php if ($meta['doctor_name'] || $meta['doctor_phone']): ?>
-          <div class="card section-card mb-3">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2"><i class="bi bi-hospital me-2 text-success"></i><h3 class="h6 m-0"><?= t('doctor_info') ?></h3></div>
-              <p class="mb-1"><span class="label"><?= t('doctor') ?>:</span> <?= htmlspecialchars($meta['doctor_name']) ?></p>
-              <?php if ($meta['doctor_phone']): ?><p class="mb-0"><span class="label"><?= t('phone') ?>:</span> <a class="text-decoration-none" href="tel:<?= htmlspecialchars($meta['doctor_phone']) ?>"><?= htmlspecialchars($meta['doctor_phone']) ?></a></p><?php endif; ?>
+        <div class="emergency">
+            <div class="section-title">ACİL DURUM</div>
+            <div class="info-item">
+                <span class="label">Acil Durum İletişim:</span>
+                <span class="value">
+                    <?php if ($meta['emergency_name'] || $meta['emergency_phone']): ?>
+                        <div><?= htmlspecialchars(trim($meta['emergency_name'])) ?><?= $meta['emergency_phone']?' - '.htmlspecialchars($meta['emergency_phone']):'' ?></div>
+                    <?php else: ?>
+                        <div>Sahibi: <?= htmlspecialchars($patient['user_name']) ?> - <a href="mailto:<?= htmlspecialchars($patient['user_email']) ?>"><?= htmlspecialchars($patient['user_email']) ?></a></div>
+                    <?php endif; ?>
+                </span>
             </div>
-          </div>
-          <?php endif; ?>
 
-          <?php if (!empty($patient['hasta_ilac'])): ?>
-          <div class="card section-card mb-3">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2"><i class="bi bi-capsule-pill me-2 text-warning"></i><h3 class="h6 m-0"><?= t('medications') ?></h3></div>
-              <p class="mb-0"><?= nl2br(htmlspecialchars($patient['hasta_ilac'])) ?></p>
+            <div class="action-buttons">
+                <a href="tel:112" class="btn btn-call">112'yi Ara</a>
+                <?php if ($emPhone): ?><a href="tel:<?= htmlspecialchars($emPhone) ?>" class="btn btn-alert">Yakınına Bildirim Gönder</a><?php endif; ?>
+                <?php if ($mapsUrl && $mapsUrl !== '#'): ?><a href="<?= htmlspecialchars($mapsUrl) ?>" class="btn btn-location" target="_blank">Konumu Göster</a><?php endif; ?>
             </div>
-          </div>
-          <?php endif; ?>
-
-          <?php if ($meta['allergies'] || $meta['conditions'] || $meta['extra']): ?>
-          <div class="card section-card mb-3">
-            <div class="card-body">
-              <div class="d-flex align-items-center mb-2"><i class="bi bi-info-circle me-2 text-secondary"></i><h3 class="h6 m-0"><?= t('other_info') ?></h3></div>
-              <?php if ($meta['allergies']): ?><p class="mb-1"><span class="label">Alerjiler:</span> <?= htmlspecialchars($meta['allergies']) ?></p><?php endif; ?>
-              <?php if ($meta['conditions']): ?><p class="mb-1"><span class="label">Kronik Hastalıklar:</span> <?= htmlspecialchars($meta['conditions']) ?></p><?php endif; ?>
-              <?php if ($meta['extra']): ?><p class="mb-0"><span class="label">Ek Notlar:</span><br/><?= nl2br(htmlspecialchars($meta['extra'])) ?></p><?php endif; ?>
-            </div>
-          </div>
-          <?php endif; ?>
         </div>
 
-        <div class="col-lg-4">
-          <div class="card section-card">
-            <div class="card-body text-center">
-              <div class="mb-2"><span class="badge rounded-pill badge-soft">ACİL</span></div>
-              <div class="small text-muted mb-2">Bu kişi yardıma ihtiyaç duyuyor olabilir.</div>
-              <a href="#" class="btn btn-danger w-100 mb-2" onclick="window.print()"><i class="bi bi-printer me-1"></i><?= t('print_pdf') ?></a>
-              <a href="<?= htmlspecialchars($publicUrl) ?>" target="_blank" class="btn btn-outline-secondary w-100"><i class="bi bi-link-45deg me-1"></i><?= t('open_link') ?></a>
-            </div>
-          </div>
+        <div class="footer">
+            <p>Bu bilgiler ARDİO Engelsiz Yaşam NFC bilekliğinde saklanmaktadır.</p>
+            <p>Son Güncelleme: <?= date('d/m/Y H:i') ?></p>
+            <?php if ($meta['coords']): ?><p>Konum: <?= htmlspecialchars($meta['coords']) ?></p><?php endif; ?>
+            <p><a href="index.php" style="text-decoration:none;color:#3498db;">Ana Sayfa</a> · <a href="<?= htmlspecialchars($publicUrl) ?>" style="text-decoration:none;color:#3498db;">Bağlantı</a></p>
         </div>
-      </div>
-    <?php endif; ?>
-
-    <div class="text-center mt-4">
-      <a href="index.php" class="btn btn-secondary"><i class="bi bi-house-door me-1"></i><?= t('home') ?></a>
+        <?php else: ?>
+            <div class="info-section"><div class="section-title">Kayıt bulunamadı</div></div>
+        <?php endif; ?>
     </div>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
