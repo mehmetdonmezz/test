@@ -1,6 +1,8 @@
 <?php
 session_start();
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lang.php';
+setLangFromRequest();
 $site = getSiteSettings();
 $heroTitle = $site['hero_title'] ?? 'Kaybolmayı İmkânsız Kılan Bileklik';
 $heroSubtitle = $site['hero_subtitle'] ?? '';
@@ -33,6 +35,13 @@ $gallery = $site['gallery'] ?? [];
           <li class="nav-item"><a href="#how" class="nav-link">Nasıl Çalışır?</a></li>
           <li class="nav-item"><a href="#gallery" class="nav-link">Görseller</a></li>
           <li class="nav-item"><a href="#contact" class="nav-link">İletişim</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">Dil</a>
+            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+              <li><a class="dropdown-item" href="?lang=tr">Türkçe</a></li>
+              <li><a class="dropdown-item" href="?lang=en">English</a></li>
+            </ul>
+          </li>
           <li class="nav-item ms-2">
             <button class="btn btn-sm btn-outline-info" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span> Moda Geç</button>
           </li>
