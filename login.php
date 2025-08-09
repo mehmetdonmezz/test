@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lang.php';
+setLangFromRequest();
 
 if (isset($_SESSION["user_id"])) {
     header("Location: panel.php");
@@ -29,19 +31,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
             exit;
         } else {
-            $error = "Hatalı şifre veya e-posta.";
+            $error = t('error_invalid_credentials');
         }
     } catch (Throwable $e) {
-        $error = "Sunucu hatası. Lütfen daha sonra tekrar deneyin.";
+        $error = t('server_error');
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="tr" data-bs-theme="dark">
+<html lang="<?= htmlspecialchars(getLang()) ?>" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <title>Giriş Yap - ARDİO</title>
+  <title><?= t('login_title') ?></title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="assets/styles.css" rel="stylesheet" />
@@ -50,8 +52,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-md-5 col-lg-4">
-        <div class="text-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
           <button class="btn btn-sm btn-outline-info" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span> Moda Geç</button>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= t('language') ?></button>
+            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+              <li><a class="dropdown-item" href="?lang=tr"><?= t('turkish') ?></a></li>
+              <li><a class="dropdown-item" href="?lang=en"><?= t('english') ?></a></li>
+            </ul>
+          </div>
         </div>
         <div class="text-center mb-4">
           <a class="navbar-brand text-white fs-3 text-decoration-none" href="index.php">ARDİO</a>
@@ -59,23 +68,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <div class="card card-glass text-white shadow-lg">
           <div class="card-body p-4">
-            <h3 class="mb-3 text-center">Giriş Yap</h3>
+            <h3 class="mb-3 text-center"><?= t('sign_in') ?></h3>
             <?php if ($error): ?>
               <div class="alert alert-danger mb-3"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
             <form method="POST" action="login.php" novalidate>
               <div class="mb-3">
-                <label for="email" class="form-label">E-posta</label>
+                <label for="email" class="form-label"><?= t('email') ?></label>
                 <input type="email" id="email" name="email" class="form-control" required autofocus />
               </div>
               <div class="mb-3">
-                <label for="password" class="form-label">Şifre</label>
+                <label for="password" class="form-label"><?= t('password') ?></label>
                 <input type="password" id="password" name="password" class="form-control" required />
               </div>
-              <button type="submit" class="btn btn-primary-gradient w-100 py-2">Giriş Yap</button>
+              <button type="submit" class="btn btn-primary-gradient w-100 py-2"><?= t('sign_in') ?></button>
             </form>
             <p class="mt-3 text-center text-white-50">
-              Hesabın yok mu? <a href="register.php" class="text-info fw-semibold text-decoration-none">Kayıt Ol</a>
+              <?= t('no_account') ?> <a href="register.php" class="text-info fw-semibold text-decoration-none"><?= t('sign_up') ?></a>
             </p>
           </div>
         </div>

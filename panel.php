@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lang.php';
+setLangFromRequest();
 requireAuth();
 
 $user_id = (int)$_SESSION["user_id"];
@@ -194,7 +196,7 @@ $hasAvatar = file_exists($avatar['path']);
 ?>
 
 <!DOCTYPE html>
-<html lang="tr" data-bs-theme="dark">
+<html lang="<?= htmlspecialchars(getLang()) ?>" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <title>Kullanıcı Paneli - ARDİO</title>
@@ -230,10 +232,17 @@ $hasAvatar = file_exists($avatar['path']);
           </form>
         </div>
       </div>
+      <div class="dropdown">
+        <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= t('language') ?></button>
+        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+          <li><a class="dropdown-item" href="?lang=tr"><?= t('turkish') ?></a></li>
+          <li><a class="dropdown-item" href="?lang=en"><?= t('english') ?></a></li>
+        </ul>
+      </div>
       <?php if (isAdmin()): ?>
-        <a class="link-light me-1" href="admin.php">Admin</a>
+        <a class="link-light me-1" href="admin.php"><?= t('admin') ?></a>
       <?php endif; ?>
-      <a class="btn btn-outline-light btn-sm" href="logout.php">Çıkış Yap</a>
+      <a class="btn btn-outline-light btn-sm" href="logout.php"><?= t('logout') ?></a>
     </div>
   </nav>
 

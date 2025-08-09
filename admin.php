@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lang.php';
+setLangFromRequest();
 requireAdmin();
 
 // Params
@@ -89,10 +91,10 @@ function q($k, $v) {
 ?>
 
 <!DOCTYPE html>
-<html lang="tr" data-bs-theme="dark">
+<html lang="<?= htmlspecialchars(getLang()) ?>" data-bs-theme="dark">
 <head>
 <meta charset="UTF-8" />
-<title>Admin Paneli - ARDİO</title>
+<title><?= t('admin_panel') ?></title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
 <link href="assets/styles.css" rel="stylesheet" />
@@ -102,51 +104,58 @@ function q($k, $v) {
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
   <div class="container-fluid">
     <a class="navbar-brand" href="index.php">ARDİO Admin</a>
-    <div class="d-flex gap-2">
-      <a class="btn btn-outline-light btn-sm" href="admin_site.php">Site Ayarları</a>
-      <a class="btn btn-outline-light btn-sm" href="admin_analytics.php">Analitik</a>
+    <div class="d-flex align-items-center gap-2">
+      <a class="btn btn-outline-light btn-sm" href="admin_site.php"><?= t('site_settings') ?></a>
+      <a class="btn btn-outline-light btn-sm" href="admin_analytics.php"><?= t('analytics') ?></a>
+      <div class="dropdown">
+        <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= t('language') ?></button>
+        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+          <li><a class="dropdown-item" href="?lang=tr"><?= t('turkish') ?></a></li>
+          <li><a class="dropdown-item" href="?lang=en"><?= t('english') ?></a></li>
+        </ul>
+      </div>
       <button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span></button>
       <?php if (isset($_SESSION['impersonator_admin_id'])): ?>
-        <a href="admin_unimpersonate.php" class="btn btn-warning btn-sm">Admin’e Geri Dön</a>
+        <a href="admin_unimpersonate.php" class="btn btn-warning btn-sm"><?= t('return_to_admin') ?></a>
       <?php endif; ?>
-      <a href="logout.php" class="btn btn-outline-light btn-sm">Çıkış Yap</a>
+      <a href="logout.php" class="btn btn-outline-light btn-sm"><?= t('logout') ?></a>
     </div>
   </div>
 </nav>
 
 <div class="container py-4">
   <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-    <h1 class="h3 mb-0">Kullanıcılar</h1>
-    <span class="badge badge-soft">Toplam: <?= $total ?></span>
+    <h1 class="h3 mb-0"><?= t('users') ?></h1>
+    <span class="badge badge-soft"><?= t('total') ?>: <?= $total ?></span>
     <div class="ms-auto d-flex gap-2">
-      <a class="btn btn-secondary btn-sm" href="<?= q('export','csv') ?>">CSV Dışa Aktar</a>
-      <a class="btn btn-success btn-sm" href="admin_new_user.php">Yeni Kullanıcı</a>
+      <a class="btn btn-secondary btn-sm" href="<?= q('export','csv') ?>"><?= t('export_csv') ?></a>
+      <a class="btn btn-success btn-sm" href="admin_new_user.php"><?= t('new_user') ?></a>
     </div>
   </div>
 
   <form class="row g-2 mb-3 align-items-end" method="get">
     <div class="col-sm-4">
-      <label class="form-label small">Ara</label>
+      <label class="form-label small"><?= t('search') ?></label>
       <input type="text" name="q" value="<?= htmlspecialchars($keyword) ?>" class="form-control form-control-sm" placeholder="İsim, e-posta, hasta adı..." />
     </div>
     <div class="col-sm-2">
-      <label class="form-label small">Rol</label>
+      <label class="form-label small"><?= t('role') ?></label>
       <select name="role" class="form-select form-select-sm">
-        <option value="" <?= $role===''?'selected':'' ?>>Hepsi</option>
+        <option value="" <?= $role===''?'selected':'' ?>><?= t('all') ?></option>
         <option value="admin" <?= $role==='admin'?'selected':'' ?>>Admin</option>
         <option value="user" <?= $role==='user'?'selected':'' ?>>Kullanıcı</option>
       </select>
     </div>
     <div class="col-sm-2">
-      <label class="form-label small">Veri</label>
+      <label class="form-label small"><?= t('data') ?></label>
       <select name="has" class="form-select form-select-sm">
-        <option value="" <?= $hasInfo===''?'selected':'' ?>>Hepsi</option>
-        <option value="yes" <?= $hasInfo==='yes'?'selected':'' ?>>Hasta verisi var</option>
-        <option value="no" <?= $hasInfo==='no'?'selected':'' ?>>Hasta verisi yok</option>
+        <option value="" <?= $hasInfo===''?'selected':'' ?>><?= t('all') ?></option>
+        <option value="yes" <?= $hasInfo==='yes'?'selected':'' ?>><?= t('has_data') ?></option>
+        <option value="no" <?= $hasInfo==='no'?'selected':'' ?>><?= t('no_data') ?></option>
       </select>
     </div>
     <div class="col-sm-2">
-      <label class="form-label small">Sayfa boyutu</label>
+      <label class="form-label small"><?= t('page_size') ?></label>
       <select name="per" class="form-select form-select-sm">
         <?php foreach([10,20,50,100] as $pp): ?>
           <option value="<?= $pp ?>" <?= $perPage===$pp?'selected':'' ?>><?= $pp ?></option>
@@ -154,8 +163,8 @@ function q($k, $v) {
       </select>
     </div>
     <div class="col-auto">
-      <button class="btn btn-primary btn-sm">Uygula</button>
-      <a class="btn btn-secondary btn-sm" href="admin.php">Temizle</a>
+      <button class="btn btn-primary btn-sm"><?= t('apply') ?></button>
+      <a class="btn btn-secondary btn-sm" href="admin.php"><?= t('clear') ?></a>
     </div>
   </form>
 
@@ -163,16 +172,16 @@ function q($k, $v) {
     <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
       <div class="input-group input-group-sm" style="max-width:420px;">
         <select name="action" class="form-select form-select-sm" required>
-          <option value="" selected>Toplu işlem seçin…</option>
-          <option value="delete">Seçilenleri Sil</option>
-          <option value="make_admin">Seçilenleri Admin Yap</option>
-          <option value="make_user">Seçilenleri Kullanıcı Yap</option>
+          <option value="" selected><?= t('bulk_action_select') ?></option>
+          <option value="delete"><?= t('delete_selected') ?></option>
+          <option value="make_admin"><?= t('make_admin_selected') ?></option>
+          <option value="make_user"><?= t('make_user_selected') ?></option>
         </select>
-        <button class="btn btn-outline-light" type="submit">Uygula</button>
+        <button class="btn btn-outline-light" type="submit"><?= t('apply') ?></button>
       </div>
       <div class="form-check ms-2">
         <input class="form-check-input" type="checkbox" id="checkAll" onclick="toggleAll(this)" />
-        <label class="form-check-label" for="checkAll">Tümünü Seç</label>
+        <label class="form-check-label" for="checkAll"><?= t('select_all') ?></label>
       </div>
     </div>
 
@@ -199,95 +208,52 @@ function q($k, $v) {
             <td><input class="form-check-input" type="checkbox" name="ids[]" value="<?= (int)$row['user_id'] ?>" /></td>
             <td><?= (int)$row['user_id'] ?></td>
             <td><?= htmlspecialchars($row['name']) ?></td>
-            <td><a class="text-info text-decoration-none" href="mailto:<?= htmlspecialchars($row['email']) ?>"><?= htmlspecialchars($row['email']) ?></a></td>
-            <td><?= $row['is_admin'] ? '<span class="badge bg-warning text-dark">Admin</span>' : '<span class="badge bg-secondary">Kullanıcı</span>' ?></td>
-            <td><?= htmlspecialchars($row['hasta_adi'] ?? '-') ?></td>
-            <td><?= htmlspecialchars($row['hasta_dogum'] ?? '-') ?></td>
-            <td><?= htmlspecialchars($row['hasta_kan'] ?? '-') ?></td>
-            <td style="max-width:220px" class="text-truncate" title="<?= htmlspecialchars($row['hasta_ilac'] ?? '-') ?>"><?= htmlspecialchars($row['hasta_ilac'] ?? '-') ?></td>
-            <td style="max-width:220px" class="text-truncate" title="<?= htmlspecialchars($row['hasta_notlar'] ?? '-') ?>"><?= htmlspecialchars($row['hasta_notlar'] ?? '-') ?></td>
+            <td><?= htmlspecialchars($row['email']) ?></td>
+            <td>
+              <?php if ($row['is_admin']): ?>
+                <span class="badge bg-warning text-dark">Admin</span>
+              <?php else: ?>
+                <span class="badge bg-secondary">Kullanıcı</span>
+              <?php endif; ?>
+            </td>
+            <td><?= htmlspecialchars($row['hasta_adi'] ?? '') ?></td>
+            <td><?= htmlspecialchars($row['hasta_dogum'] ?? '') ?></td>
+            <td><?= htmlspecialchars($row['hasta_kan'] ?? '') ?></td>
+            <td class="text-truncate" style="max-width:240px;"><?= htmlspecialchars($row['hasta_ilac'] ?? '') ?></td>
+            <td class="text-truncate" style="max-width:240px;"><?= htmlspecialchars($row['hasta_notlar'] ?? '') ?></td>
             <td class="text-end">
-              <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#viewModal" data-row='<?= json_encode($row, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>'>Görüntüle</button>
-              <a href="admin_edit_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-warning">Düzenle</a>
-              <a href="admin_impersonate.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-light" onclick="return confirm('Bu kullanıcı olarak giriş yapılacak. Devam edilsin mi?')">Giriş Yap</a>
-              <a href="admin_delete_user.php?id=<?= $row['user_id'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Kullanıcıyı silmek istediğinize emin misiniz?')">Sil</a>
+              <a class="btn btn-sm btn-outline-light" href="admin_edit_user.php?id=<?= (int)$row['user_id'] ?>">Düzenle</a>
+              <a class="btn btn-sm btn-outline-info" href="admin_impersonate.php?id=<?= (int)$row['user_id'] ?>">Giriş Yap</a>
             </td>
           </tr>
         <?php endforeach; ?>
         </tbody>
       </table>
     </div>
+
+    <!-- Pagination -->
+    <nav>
+      <ul class="pagination pagination-sm">
+        <?php for($i=1;$i<=$pages;$i++): ?>
+          <li class="page-item <?= $i===$page?'active':'' ?>">
+            <a class="page-link" href="<?= q('page',$i) ?>"><?= $i ?></a>
+          </li>
+        <?php endfor; ?>
+      </ul>
+    </nav>
+
   </form>
-
-  <nav aria-label="Sayfalama" class="mt-3">
-    <ul class="pagination pagination-sm">
-      <?php for($p=1;$p<=$pages;$p++): ?>
-        <li class="page-item <?= $p===$page?'active':'' ?>">
-          <a class="page-link" href="<?= q('page',$p) ?>"><?= $p ?></a>
-        </li>
-      <?php endfor; ?>
-    </ul>
-  </nav>
-</div>
-
-<!-- View Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content bg-dark text-white">
-      <div class="modal-header">
-        <h5 class="modal-title">Kullanıcı Detayı</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <div id="view-content">Yükleniyor...</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
-      </div>
-    </div>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="assets/theme.js"></script>
 <script>
-const viewModal = document.getElementById('viewModal');
-viewModal.addEventListener('show.bs.modal', event => {
-  const button = event.relatedTarget;
-  const data = JSON.parse(button.getAttribute('data-row'));
-  const html = `
-    <div class="row g-3">
-      <div class="col-md-6"><strong>ID:</strong> ${data.user_id}</div>
-      <div class="col-md-6"><strong>Rol:</strong> ${data.is_admin ? 'Admin' : 'Kullanıcı'}</div>
-      <div class="col-md-6"><strong>Ad:</strong> ${escapeHtml(data.name || '')}</div>
-      <div class="col-md-6"><strong>E-posta:</strong> ${escapeHtml(data.email || '')}</div>
-      <hr/>
-      <div class="col-md-6"><strong>Hasta Adı:</strong> ${escapeHtml(data.hasta_adi || '-')}</div>
-      <div class="col-md-6"><strong>Doğum:</strong> ${escapeHtml(data.hasta_dogum || '-')}</div>
-      <div class="col-md-6"><strong>Kan:</strong> ${escapeHtml(data.hasta_kan || '-')}</div>
-      <div class="col-12"><strong>İlaçlar:</strong><br/> ${escapeHtml(data.hasta_ilac || '-')}</div>
-      <div class="col-12"><strong>Notlar:</strong><br/> ${escapeHtml(data.hasta_notlar || '-')}</div>
-    </div>`;
-  document.getElementById('view-content').innerHTML = html;
-});
-function escapeHtml(unsafe){
-  return String(unsafe)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#039;');
+function toggleAll(el){
+  const boxes=document.querySelectorAll('input[name="ids[]"]');
+  boxes.forEach(b=>b.checked=el.checked);
 }
-function toggleAll(cb){
-  document.querySelectorAll('input[name="ids[]"]').forEach(el=>{ el.checked = cb.checked; });
-}
-function confirmBulk(form){
-  const action = form.action.value || form.querySelector('select[name="action"]').value;
-  const checked = Array.from(form.querySelectorAll('input[name="ids[]"]:checked')).length;
-  if (!checked) { alert('Önce en az bir kullanıcı seçiniz.'); return false; }
-  if (!action) { alert('Bir toplu işlem seçiniz.'); return false; }
-  if (action==='delete') return confirm('Seçilen kullanıcıları silmek istediğinize emin misiniz?');
-  return true;
+function confirmBulk(f){
+  return confirm('Onaylıyor musunuz?');
 }
 </script>
 </body>
