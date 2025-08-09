@@ -134,6 +134,13 @@ $publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
     $code
 );
 $qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($publicUrl);
+
+// Avatar için baş harfler
+$initials = '';
+if (!empty($user['name'])) {
+  $parts = preg_split('/\s+/', trim($user['name']));
+  $initials = strtoupper(mb_substr($parts[0] ?? '', 0, 1) . mb_substr(end($parts) ?: '', 0, 1));
+}
 ?>
 
 <!DOCTYPE html>
@@ -149,10 +156,18 @@ $qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urle
 
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
     <a class="navbar-brand" href="index.php">ARDİO</a>
-    <div class="ms-auto small">
-      <span class="me-3">Hoşgeldin, <strong><?= htmlspecialchars($user["name"] ?? "") ?></strong></span>
+    <div class="ms-auto small d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle bg-info d-inline-flex justify-content-center align-items-center" style="width:36px;height:36px;">
+          <span class="fw-bold text-dark"><?= htmlspecialchars($initials ?: 'U') ?></span>
+        </div>
+        <div class="d-none d-md-block">
+          <div class="fw-semibold small mb-0"><?= htmlspecialchars($user['name'] ?? '') ?></div>
+          <div class="text-white-50 small"><?= htmlspecialchars($user['email'] ?? '') ?></div>
+        </div>
+      </div>
       <?php if (isAdmin()): ?>
-        <a class="link-light me-3" href="admin.php">Admin</a>
+        <a class="link-light me-1" href="admin.php">Admin</a>
       <?php endif; ?>
       <a class="btn btn-outline-light btn-sm" href="logout.php">Çıkış Yap</a>
     </div>
@@ -175,65 +190,80 @@ $qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urle
         <div class="card bg-black border-0 shadow-sm mb-4">
           <div class="card-body">
             <form method="POST" action="panel.php" class="mb-1">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label for="hasta_adi" class="form-label">Hasta Adı Soyadı</label>
-                  <input type="text" id="hasta_adi" name="hasta_adi" class="form-control" required value="<?= htmlspecialchars($patient["hasta_adi"] ?? "") ?>" />
+              <ul class="nav nav-tabs" id="infoTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="genel-tab" data-bs-toggle="tab" data-bs-target="#genel" type="button" role="tab">Genel</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="saglik-tab" data-bs-toggle="tab" data-bs-target="#saglik" type="button" role="tab">Sağlık</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="iletisim-tab" data-bs-toggle="tab" data-bs-target="#iletisim" type="button" role="tab">İletişim</button>
+                </li>
+              </ul>
+              <div class="tab-content pt-3">
+                <div class="tab-pane fade show active" id="genel" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label for="hasta_adi" class="form-label">Hasta Adı Soyadı</label>
+                      <input type="text" id="hasta_adi" name="hasta_adi" class="form-control" required value="<?= htmlspecialchars($patient["hasta_adi"] ?? "") ?>" />
+                    </div>
+                    <div class="col-md-3">
+                      <label for="hasta_dogum" class="form-label">Doğum Tarihi</label>
+                      <input type="date" id="hasta_dogum" name="hasta_dogum" class="form-control" required value="<?= htmlspecialchars($patient["hasta_dogum"] ?? "") ?>" />
+                    </div>
+                    <div class="col-md-3">
+                      <label for="hasta_kan" class="form-label">Kan Grubu</label>
+                      <input type="text" id="hasta_kan" name="hasta_kan" class="form-control" placeholder="Örn: 0 Rh+" value="<?= htmlspecialchars($patient["hasta_kan"] ?? "") ?>" />
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Adres</label>
+                      <textarea name="address" class="form-control" rows="2" placeholder="İkamet adresi..."><?= htmlspecialchars($meta['address']) ?></textarea>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-3">
-                  <label for="hasta_dogum" class="form-label">Doğum Tarihi</label>
-                  <input type="date" id="hasta_dogum" name="hasta_dogum" class="form-control" required value="<?= htmlspecialchars($patient["hasta_dogum"] ?? "") ?>" />
+                <div class="tab-pane fade" id="saglik" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Alerjiler</label>
+                      <input type="text" name="allergies" class="form-control" placeholder="Virgülle ayırın: Penisilin, Yer fıstığı" value="<?= htmlspecialchars($meta['allergies']) ?>" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Kronik Hastalıklar</label>
+                      <input type="text" name="conditions" class="form-control" placeholder="Virgülle ayırın: Diyabet, Hipertansiyon" value="<?= htmlspecialchars($meta['conditions']) ?>" />
+                    </div>
+                    <div class="col-12">
+                      <label for="hasta_ilac" class="form-label">İlaçlar</label>
+                      <textarea id="hasta_ilac" name="hasta_ilac" class="form-control" rows="2" placeholder="Düzenli kullanılan ilaçlar, dozlar vb."><?= htmlspecialchars($patient["hasta_ilac"] ?? "") ?></textarea>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Doktor Adı</label>
+                      <input type="text" name="doctor_name" class="form-control" value="<?= htmlspecialchars($meta['doctor_name']) ?>" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Doktor Telefonu</label>
+                      <input type="text" name="doctor_phone" class="form-control" placeholder="0xxx..." value="<?= htmlspecialchars($meta['doctor_phone']) ?>" />
+                    </div>
+                    <div class="col-12">
+                      <label for="extra_notes" class="form-label">Ek Notlar</label>
+                      <textarea id="extra_notes" name="extra_notes" class="form-control" rows="3" placeholder="Diğer önemli bilgiler (alerji taşı, implant, cihaz vb.)"><?= htmlspecialchars($meta['extra']) ?></textarea>
+                    </div>
+                  </div>
                 </div>
-                <div class="col-md-3">
-                  <label for="hasta_kan" class="form-label">Kan Grubu</label>
-                  <input type="text" id="hasta_kan" name="hasta_kan" class="form-control" placeholder="Örn: 0 Rh+" value="<?= htmlspecialchars($patient["hasta_kan"] ?? "") ?>" />
-                </div>
-
-                <div class="col-12">
-                  <hr class="border-secondary" />
-                  <h5>İleri Seviye Bilgiler</h5>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Acil İletişim Adı</label>
-                  <input type="text" name="emergency_name" class="form-control" value="<?= htmlspecialchars($meta['emergency_name']) ?>" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Acil İletişim Telefonu</label>
-                  <input type="text" name="emergency_phone" class="form-control" placeholder="05xx..." value="<?= htmlspecialchars($meta['emergency_phone']) ?>" />
-                </div>
-
-                <div class="col-12">
-                  <label class="form-label">Adres</label>
-                  <textarea name="address" class="form-control" rows="2" placeholder="İkamet adresi..."><?= htmlspecialchars($meta['address']) ?></textarea>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Doktor Adı</label>
-                  <input type="text" name="doctor_name" class="form-control" value="<?= htmlspecialchars($meta['doctor_name']) ?>" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Doktor Telefonu</label>
-                  <input type="text" name="doctor_phone" class="form-control" placeholder="0xxx..." value="<?= htmlspecialchars($meta['doctor_phone']) ?>" />
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Alerjiler</label>
-                  <input type="text" name="allergies" class="form-control" placeholder="Virgülle ayırın: Penisilin, Yer fıstığı" value="<?= htmlspecialchars($meta['allergies']) ?>" />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Kronik Hastalıklar</label>
-                  <input type="text" name="conditions" class="form-control" placeholder="Virgülle ayırın: Diyabet, Hipertansiyon" value="<?= htmlspecialchars($meta['conditions']) ?>" />
-                </div>
-
-                <div class="col-12">
-                  <label for="hasta_ilac" class="form-label">İlaçlar</label>
-                  <textarea id="hasta_ilac" name="hasta_ilac" class="form-control" rows="2" placeholder="Düzenli kullanılan ilaçlar, dozlar vb."><?= htmlspecialchars($patient["hasta_ilac"] ?? "") ?></textarea>
-                </div>
-
-                <div class="col-12">
-                  <label for="extra_notes" class="form-label">Ek Notlar</label>
-                  <textarea id="extra_notes" name="extra_notes" class="form-control" rows="3" placeholder="Diğer önemli bilgiler (alerji taşı, implant, cihaz vb.)"><?= htmlspecialchars($meta['extra']) ?></textarea>
+                <div class="tab-pane fade" id="iletisim" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label">Acil İletişim Adı</label>
+                      <input type="text" name="emergency_name" class="form-control" value="<?= htmlspecialchars($meta['emergency_name']) ?>" />
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">Acil İletişim Telefonu</label>
+                      <input type="text" name="emergency_phone" class="form-control" placeholder="05xx..." value="<?= htmlspecialchars($meta['emergency_phone']) ?>" />
+                    </div>
+                    <div class="col-12">
+                      <div class="small text-white-50">Acil durumda bu kişiye ulaşılması önerilir.</div>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="mt-3 d-flex gap-2">
