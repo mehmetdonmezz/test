@@ -35,3 +35,15 @@ body {
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.25);
 }
+
+/* Landing sayfası */
+.hero-landing {
+  background: radial-gradient(1200px 800px at -10% -10%, rgba(13,110,253,.25), transparent 60%),
+              radial-gradient(1200px 800px at 110% 110%, rgba(102,16,242,.25), transparent 60%),
+              linear-gradient(135deg, #0b0f19 0%, #0a1a2b 50%, #0a2742 100%);
+  color: #fff;
+}
+.hero-landing h1 { letter-spacing: .4px; }
+.section-muted { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00)); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
+.icon-pill { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; }
+.card-feature { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); }
