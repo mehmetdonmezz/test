@@ -24,6 +24,7 @@ session_start();
         <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-2">
           <li class="nav-item"><a href="#features" class="nav-link">Özellikler</a></li>
           <li class="nav-item"><a href="#how" class="nav-link">Nasıl Çalışır?</a></li>
+          <li class="nav-item"><a href="#gallery" class="nav-link">Görseller</a></li>
           <li class="nav-item"><a href="#contact" class="nav-link">İletişim</a></li>
           <li class="nav-item ms-2">
             <button class="btn btn-sm btn-outline-info" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span> Moda Geç</button>
@@ -140,6 +141,29 @@ session_start();
     </div>
   </section>
 
+  <!-- GALLERY -->
+  <section id="gallery" class="py-5 section-muted">
+    <div class="container">
+      <div class="text-center mb-4">
+        <span class="badge rounded-pill bg-light text-dark">Görseller</span>
+        <h2 class="h2 mt-2">Ürün Görselleri</h2>
+        <p class="text-white-50">Bileklik, QR etiket ve acil profil ekranından görüntüler.</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-6 col-md-4">
+          <img src="https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?q=80&w=1200&auto=format&fit=crop" class="img-fluid gallery-img" alt="Bileklik" />
+        </div>
+        <div class="col-6 col-md-4">
+          <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=1200&auto=format&fit=crop" class="img-fluid gallery-img" alt="QR Etiket" />
+        </div>
+        <div class="col-6 col-md-4">
+          <img src="https://images.unsplash.com/photo-1516726817505-f5ed825624d8?q=80&w=1200&auto=format&fit=crop" class="img-fluid gallery-img" alt="Acil Profil Ekranı" />
+        </div>
+      </div>
+      <div class="text-center mt-3 small text-white-50">Görseller temsili olup ürün prototipini göstermektedir.</div>
+    </div>
+  </section>
+
   <!-- CONTACT -->
   <section id="contact" class="py-5 section-muted">
     <div class="container text-center">
@@ -150,8 +174,43 @@ session_start();
   </section>
 
   <!-- FOOTER -->
-  <footer class="text-center py-4 text-white-50 bg-dark border-top border-secondary">
-    Genç zihinler, büyük işler: © 2025 ARDİO Teknoloji.
+  <footer class="py-5 bg-dark border-top border-secondary">
+    <div class="container">
+      <div class="row g-3 align-items-start">
+        <div class="col-md-4">
+          <div class="fw-bold text-primary mb-2">ARDİO</div>
+          <div class="text-white-50 small">Genç zihinler, büyük işler. Acil durumlarda doğru bilgiye anında erişim.</div>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="fw-semibold mb-2">Hızlı Linkler</div>
+          <ul class="list-unstyled small">
+            <li><a class="footer-link" href="#features">Özellikler</a></li>
+            <li><a class="footer-link" href="#how">Nasıl Çalışır?</a></li>
+            <li><a class="footer-link" href="#gallery">Görseller</a></li>
+            <li><a class="footer-link" href="#contact">İletişim</a></li>
+            <?php if (!isset($_SESSION['user_name'])): ?>
+              <li><a class="footer-link" href="login.php">Giriş Yap</a></li>
+              <li><a class="footer-link" href="register.php">Kayıt Ol</a></li>
+            <?php else: ?>
+              <li><a class="footer-link" href="panel.php">Panel</a></li>
+              <?php if (isset($_SESSION['is_admin']) && (int)$_SESSION['is_admin'] === 1): ?>
+                <li><a class="footer-link" href="admin.php">Admin</a></li>
+              <?php endif; ?>
+            <?php endif; ?>
+          </ul>
+        </div>
+        <div class="col-6 col-md-4">
+          <div class="fw-semibold mb-2">Sosyal</div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-outline-light btn-sm" href="#" aria-label="Twitter"><i class="bi bi-twitter"></i></a>
+            <a class="btn btn-outline-light btn-sm" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+            <a class="btn btn-outline-light btn-sm" href="#" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+            <a class="btn btn-outline-light btn-sm" href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="text-center text-white-50 small mt-4">© 2025 ARDİO Teknoloji</div>
+    </div>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

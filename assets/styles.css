@@ -47,3 +47,11 @@ body {
 .section-muted { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00)); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
 .icon-pill { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; }
 .card-feature { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); }
+
+/* Galeri */
+.gallery-img { border-radius: 12px; border: 1px solid rgba(255,255,255,.08); }
+.gallery-img:hover { transform: translateY(-2px); transition: .2s ease; }
+
+/* Footer */
+.footer-link { color: rgba(255,255,255,.7); text-decoration: none; }
+.footer-link:hover { color: #fff; text-decoration: underline; }
