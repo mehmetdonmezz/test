@@ -49,3 +49,36 @@ function verifyPublicCode(int $userId, string $code): bool {
     $expected = makePublicCode($userId);
     return hash_equals($expected, $code);
 }
+
+// Site ayarları (JSON tabanlı basit storage)
+function siteSettingsPath(): string {
+    $path = __DIR__ . '/assets/site.json';
+    $dir = dirname($path);
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    return $path;
+}
+
+function getSiteSettings(): array {
+    $path = siteSettingsPath();
+    if (!file_exists($path)) {
+        $defaults = [
+            'hero_title' => 'Kaybolmayı İmkânsız Kılan Bileklik',
+            'hero_subtitle' => 'ARDİO, Alzheimer ve zihinsel engelli bireyler için akıllı bileklik ve acil bilgi platformu.',
+            'contact_email' => 'merhaba@ardiodigital.com',
+            'social' => [
+                'twitter' => '', 'instagram' => '', 'linkedin' => '', 'youtube' => ''
+            ],
+            'gallery' => []
+        ];
+        file_put_contents($path, json_encode($defaults, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
+        return $defaults;
+    }
+    $json = json_decode(file_get_contents($path), true);
+    return is_array($json) ? $json : [];
+}
+
+function saveSiteSettings(array $settings): bool {
+    $path = siteSettingsPath();
+    $json = json_encode($settings, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE);
+    return (bool)file_put_contents($path, $json, LOCK_EX);
+}
