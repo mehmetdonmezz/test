@@ -11,7 +11,7 @@ $stmtUser = $pdo->prepare("SELECT name, email FROM users WHERE id = ?");
 $stmtUser->execute([$user_id]);
 $user = $stmtUser->fetch();
 
-// Avatar yükleme/gösterim yardımcıları
+// Avatar yardımcıları
 $avatarDir = __DIR__ . '/assets/avatars';
 if (!is_dir($avatarDir)) { @mkdir($avatarDir, 0775, true); }
 function currentAvatar(int $uid, string $dir): array {
@@ -29,10 +29,9 @@ $avatar = currentAvatar($user_id, $avatarDir);
 if (isset($_POST['__avatar_upload']) && isset($_FILES['avatar']) && is_uploaded_file($_FILES['avatar']['tmp_name'])) {
     $info = @getimagesize($_FILES['avatar']['tmp_name']);
     if ($info && in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF], true)) {
-        $ext = image_type_to_extension($info[2], false); // jpeg|png|gif
+        $ext = image_type_to_extension($info[2], false);
         $targetPng = $avatarDir . "/user_{$user_id}.png";
         $targetRaw = $avatarDir . "/user_{$user_id}.{$ext}";
-
         if (function_exists('imagecreatefromstring') && function_exists('imagecreatetruecolor') && function_exists('imagecopyresampled') && function_exists('imagepng')) {
             $img = @imagecreatefromstring(file_get_contents($_FILES['avatar']['tmp_name']));
             if ($img) {
@@ -43,15 +42,12 @@ if (isset($_POST['__avatar_upload']) && isset($_FILES['avatar']) && is_uploaded_
                 @imagepng($dst, $targetPng, 8);
                 @imagedestroy($dst);
                 @imagedestroy($img);
-                // Eski farklı uzantılı avatarları temizle
                 foreach (['jpg','jpeg','gif'] as $e) { $old = $avatarDir . "/user_{$user_id}.{$e}"; if (file_exists($old)) @unlink($old); }
             } else {
-                // Çözümlenemedi, ham dosyayı koy
                 @move_uploaded_file($_FILES['avatar']['tmp_name'], $targetRaw);
                 if ($ext !== 'png' && file_exists($targetPng)) @unlink($targetPng);
             }
         } else {
-            // GD yok: doğrudan kopyala
             @move_uploaded_file($_FILES['avatar']['tmp_name'], $targetRaw);
             if ($ext !== 'png' && file_exists($targetPng)) @unlink($targetPng);
         }
@@ -63,67 +59,36 @@ if (isset($_POST['__avatar_upload']) && isset($_FILES['avatar']) && is_uploaded_
 $infoSaved = false;
 $error = "";
 
-// Yardımcı: notlardan meta verileri çöz
-function parseNotes(?string $notes): array {
-    $meta = [
-        'emergency_name' => '',
-        'emergency_phone' => '',
-        'address' => '',
-        'doctor_name' => '',
-        'doctor_phone' => '',
-        'allergies' => '',
-        'conditions' => '',
-        'extra' => ''
-    ];
-    if (!$notes) return $meta;
-    $lines = preg_split("/\r?\n/", $notes);
-    $rest = [];
-    foreach ($lines as $line) {
-        $t = trim($line);
-        if ($t === '') continue;
-        if (stripos($t, 'Acil İletişim:') === 0) {
-            $val = trim(substr($t, strlen('Acil İletişim:')));
-            // "Ad (Telefon)" biçiminden parçala
-            if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) {
-                $meta['emergency_name'] = trim($m[1]);
-                $meta['emergency_phone'] = trim($m[2]);
-            } else {
-                $meta['emergency_name'] = $val;
-            }
-        } elseif (stripos($t, 'Adres:') === 0) {
-            $meta['address'] = trim(substr($t, strlen('Adres:')));
-        } elseif (stripos($t, 'Doktor:') === 0) {
-            $val = trim(substr($t, strlen('Doktor:')));
-            if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) {
-                $meta['doctor_name'] = trim($m[1]);
-                $meta['doctor_phone'] = trim($m[2]);
-            } else {
-                $meta['doctor_name'] = $val;
-            }
-        } elseif (stripos($t, 'Alerjiler:') === 0) {
-            $meta['allergies'] = trim(substr($t, strlen('Alerjiler:')));
-        } elseif (stripos($t, 'Kronik Hastalıklar:') === 0) {
-            $meta['conditions'] = trim(substr($t, strlen('Kronik Hastalıklar:')));
-        } elseif (stripos($t, 'Ek Notlar:') === 0) {
-            $meta['extra'] = trim(substr($t, strlen('Ek Notlar:')));
-        } else {
-            $rest[] = $t;
-        }
-    }
-    // Eğer Ek Notlar boşsa ve rest var ise, birleştir
-    if ($meta['extra'] === '' && !empty($rest)) {
-        $meta['extra'] = implode("\n", $rest);
-    }
-    return $meta;
-}
+// Tüm profilleri getir
+$stmtProfiles = $pdo->prepare("SELECT id, hasta_adi, hasta_dogum FROM patient_info WHERE user_id = ? ORDER BY id DESC");
+$stmtProfiles->execute([$user_id]);
+$profiles = $stmtProfiles->fetchAll();
+$currentPid = isset($_GET['pid']) ? (int)$_GET['pid'] : 0;
+if ($currentPid === 0 && !empty($profiles)) { $currentPid = (int)$profiles[0]['id']; }
+$validPid = in_array($currentPid, array_map(fn($p)=> (int)$p['id'], $profiles), true);
+if (!$validPid) { $currentPid = 0; }
 
+// CRUD işlemleri
 if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['__avatar_upload'])) {
+    if (isset($_POST['__create_profile'])) {
+        $pdo->prepare("INSERT INTO patient_info (user_id, hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar) VALUES (?, '', NULL, '', '', '')")->execute([$user_id]);
+        $newId = (int)$pdo->lastInsertId();
+        header('Location: panel.php?pid=' . $newId);
+        exit;
+    }
+    if (isset($_POST['__delete_profile']) && $validPid) {
+        $del = $pdo->prepare("DELETE FROM patient_info WHERE id = ? AND user_id = ?");
+        $del->execute([$currentPid, $user_id]);
+        header('Location: panel.php');
+        exit;
+    }
+
+    // Kaydet
     $hasta_adi = trim($_POST["hasta_adi"] ?? "");
     $hasta_dogum = trim($_POST["hasta_dogum"] ?? "");
     $hasta_kan = trim($_POST["hasta_kan"] ?? "");
     $hasta_ilac = trim($_POST["hasta_ilac"] ?? "");
 
-    // Gelişmiş alanlar
     $emergency_name = trim($_POST['emergency_name'] ?? '');
     $emergency_phone = trim($_POST['emergency_phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
@@ -136,7 +101,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['__avatar_upload'])) 
     if (!$hasta_adi || !$hasta_dogum) {
         $error = "Hasta adı ve doğum tarihi zorunludur.";
     } else {
-        // Notları yapılandırılmış biçimde derle
         $notesLines = [];
         if ($emergency_name || $emergency_phone) {
             $val = $emergency_name;
@@ -154,39 +118,71 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && !isset($_POST['__avatar_upload'])) 
         if ($extra_notes) $notesLines[] = 'Ek Notlar: ' . $extra_notes;
         $hasta_notlar = implode("\n", $notesLines);
 
-        // Var mı?
-        $stmtCheck = $pdo->prepare("SELECT id FROM patient_info WHERE user_id = ?");
-        $stmtCheck->execute([$user_id]);
-        $exists = $stmtCheck->fetch();
-
-        if ($exists) {
-            $stmtUpdate = $pdo->prepare("UPDATE patient_info SET hasta_adi=?, hasta_dogum=?, hasta_kan=?, hasta_ilac=?, hasta_notlar=? WHERE user_id=?");
-            $stmtUpdate->execute([$hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar, $user_id]);
+        if ($validPid) {
+            $stmtUpdate = $pdo->prepare("UPDATE patient_info SET hasta_adi=?, hasta_dogum=?, hasta_kan=?, hasta_ilac=?, hasta_notlar=? WHERE id=? AND user_id=?");
+            $stmtUpdate->execute([$hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar, $currentPid, $user_id]);
         } else {
             $stmtInsert = $pdo->prepare("INSERT INTO patient_info (user_id, hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar) VALUES (?, ?, ?, ?, ?, ?)");
             $stmtInsert->execute([$user_id, $hasta_adi, $hasta_dogum, $hasta_kan, $hasta_ilac, $hasta_notlar]);
+            $currentPid = (int)$pdo->lastInsertId();
         }
         $infoSaved = true;
+        header('Location: panel.php?pid=' . (int)$currentPid);
+        exit;
     }
 }
 
-$stmtInfo = $pdo->prepare("SELECT hasta_adi, hasta_dogum, hasta_kan, hasta_ilac, hasta_notlar FROM patient_info WHERE user_id = ?");
-$stmtInfo->execute([$user_id]);
-$patient = $stmtInfo->fetch();
+// Mevcut profil ve meta
+define('NL', "\n");
+function parseNotes(?string $notes): array {
+    $meta = [
+        'emergency_name' => '', 'emergency_phone' => '', 'address' => '',
+        'doctor_name' => '', 'doctor_phone' => '', 'allergies' => '', 'conditions' => '', 'extra' => ''
+    ];
+    if (!$notes) return $meta;
+    $lines = preg_split("/\r?\n/", $notes);
+    $rest = [];
+    foreach ($lines as $line) {
+        $t = trim($line);
+        if ($t === '') continue;
+        if (stripos($t, 'Acil İletişim:') === 0) {
+            $val = trim(substr($t, strlen('Acil İletişim:')));
+            if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) { $meta['emergency_name']=trim($m[1]); $meta['emergency_phone']=trim($m[2]); } else { $meta['emergency_name']=$val; }
+        } elseif (stripos($t, 'Adres:') === 0) { $meta['address'] = trim(substr($t, strlen('Adres:')));
+        } elseif (stripos($t, 'Doktor:') === 0) {
+            $val = trim(substr($t, strlen('Doktor:')));
+            if (preg_match('/^(.*)\((.*)\)$/u', $val, $m)) { $meta['doctor_name']=trim($m[1]); $meta['doctor_phone']=trim($m[2]); } else { $meta['doctor_name']=$val; }
+        } elseif (stripos($t, 'Alerjiler:') === 0) { $meta['allergies'] = trim(substr($t, strlen('Alerjiler:')));
+        } elseif (stripos($t, 'Kronik Hastalıklar:') === 0) { $meta['conditions'] = trim(substr($t, strlen('Kronik Hastalıklar:')));
+        } elseif (stripos($t, 'Ek Notlar:') === 0) { $meta['extra'] = trim(substr($t, strlen('Ek Notlar:')));
+        } else { $rest[] = $t; }
+    }
+    if ($meta['extra'] === '' && !empty($rest)) { $meta['extra'] = implode("\n", $rest); }
+    return $meta;
+}
+
+$currentPatient = null;
+if ($currentPid > 0) {
+    $stmtInfo = $pdo->prepare("SELECT * FROM patient_info WHERE id = ? AND user_id = ?");
+    $stmtInfo->execute([$currentPid, $user_id]);
+    $currentPatient = $stmtInfo->fetch();
+}
+$patient = $currentPatient ?: null;
 $meta = parseNotes($patient['hasta_notlar'] ?? null);
 
-// Public profil linki ve QR
-$code = makePublicCode($user_id);
-$publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
-    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
-    $_SERVER['HTTP_HOST'] ?? 'localhost',
-    rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/.'),
-    $user_id,
-    $code
-);
-$qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($publicUrl);
+// Public profil linki ve QR (pid tabanlı)
+if ($patient) {
+    $publicUrl = sprintf('%s://%s%s/p.php?pid=%d&code=%s',
+        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
+        $_SERVER['HTTP_HOST'] ?? 'localhost',
+        rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/.'),
+        (int)$patient['id'],
+        makePublicCodeForPatient((int)$patient['id'])
+    );
+    $qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($publicUrl);
+}
 
-// Avatar için baş harfler veya dosya
+// Avatar için baş harfler
 $initials = '';
 if (!empty($user['name'])) {
   $parts = preg_split('/\s+/', trim($user['name']));
@@ -262,7 +258,7 @@ $hasAvatar = file_exists($avatar['path']);
 
         <div class="card bg-black border-0 shadow-sm mb-4">
           <div class="card-body">
-            <form method="POST" action="panel.php" class="mb-1" enctype="multipart/form-data">
+            <form method="POST" action="panel.php?pid=<?= (int)$currentPid ?>" class="mb-1" enctype="multipart/form-data">
               <ul class="nav nav-tabs" id="infoTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                   <button class="nav-link active" id="genel-tab" data-bs-toggle="tab" data-bs-target="#genel" type="button" role="tab">Genel</button>
@@ -291,7 +287,7 @@ $hasAvatar = file_exists($avatar['path']);
                     </div>
                     <div class="col-12">
                       <label class="form-label fw-semibold">Adres</label>
-                      <textarea name="address" class="form-control" rows="2" placeholder="İkamet adresi..."><?= htmlspecialchars($meta['address']) ?></textarea>
+                      <textarea name="address" class="form-control" rows="2" placeholder="İkamet adresi...">&nbsp;<?= htmlspecialchars($meta['address']) ?></textarea>
                     </div>
                   </div>
                 </div>
@@ -341,7 +337,7 @@ $hasAvatar = file_exists($avatar['path']);
               </div>
               <div class="mt-3 d-flex gap-2">
                 <button type="submit" class="btn btn-success">Kaydet</button>
-                <a class="btn btn-outline-light" href="<?= htmlspecialchars($publicUrl) ?>" target="_blank" rel="noopener">Acil Profili Gör</a>
+                <?php if ($patient): ?><a class="btn btn-outline-light" href="<?= htmlspecialchars($publicUrl) ?>" target="_blank" rel="noopener">Acil Profili Gör</a><?php endif; ?>
               </div>
             </form>
           </div>
@@ -355,17 +351,17 @@ $hasAvatar = file_exists($avatar['path']);
             </div>
             <div class="card-body">
               <div class="row g-3">
-                <div class="col-md-6"><strong>Adı Soyadı:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_adi"]) ?></span></div>
-                <div class="col-md-3"><strong>Doğum:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_dogum"]) ?></span></div>
-                <div class="col-md-3"><strong>Kan:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_kan"]) ?></span></div>
+                <div class="col-md-6"><strong>Adı Soyadı:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_adi"] ?? '') ?></span></div>
+                <div class="col-md-3"><strong>Doğum:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_dogum"] ?? '') ?></span></div>
+                <div class="col-md-3"><strong>Kan:</strong> <span class="text-light"><?= htmlspecialchars($patient["hasta_kan"] ?? '') ?></span></div>
                 <?php if ($meta['emergency_name'] || $meta['emergency_phone']): ?>
-                  <div class="col-12"><strong>Acil İletişim:</strong> <span class="text-light"><?= htmlspecialchars(trim($meta['emergency_name'].' '.$meta['emergency_phone'])) ?></span></div>
+                  <div class="col-12"><strong>Acil İletişim:</strong> <span class="text-light"><?= htmlspecialchars(trim(($meta['emergency_name']??'') . ' ' . ($meta['emergency_phone']??''))) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['address']): ?>
                   <div class="col-12"><strong>Adres:</strong> <span class="text-light"><?= nl2br(htmlspecialchars($meta['address'])) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['doctor_name'] || $meta['doctor_phone']): ?>
-                  <div class="col-12"><strong>Doktor:</strong> <span class="text-light"><?= htmlspecialchars(trim($meta['doctor_name'].' '.$meta['doctor_phone'])) ?></span></div>
+                  <div class="col-12"><strong>Doktor:</strong> <span class="text-light"><?= htmlspecialchars(trim(($meta['doctor_name']??'') . ' ' . ($meta['doctor_phone']??''))) ?></span></div>
                 <?php endif; ?>
                 <?php if ($meta['allergies']): ?>
                   <div class="col-12"><strong>Alerjiler:</strong> <span class="text-light"><?= htmlspecialchars($meta['allergies']) ?></span></div>
@@ -385,10 +381,33 @@ $hasAvatar = file_exists($avatar['path']);
         <?php endif; ?>
       </div>
       <div class="col-lg-4">
+        <div class="card card-glass text-white mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Profillerim</h5>
+            <div class="list-group list-group-flush">
+              <?php foreach ($profiles as $pr): ?>
+                <a class="list-group-item list-group-item-action <?= (int)$pr['id']===$currentPid?'active':'' ?>" href="panel.php?pid=<?= (int)$pr['id'] ?>">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <span><?= htmlspecialchars($pr['hasta_adi'] ?: ('Profil #' . (int)$pr['id'])) ?></span>
+                    <small class="text-white-50 ms-2"><?= htmlspecialchars($pr['hasta_dogum'] ?? '') ?></small>
+                  </div>
+                </a>
+              <?php endforeach; ?>
+              <?php if (empty($profiles)): ?>
+                <div class="list-group-item text-white-50">Henüz profil yok</div>
+              <?php endif; ?>
+            </div>
+            <form method="post" class="mt-2 d-flex gap-2">
+              <button class="btn btn-success btn-sm" name="__create_profile" value="1">Yeni Profil</button>
+              <?php if ($currentPid): ?><button class="btn btn-outline-danger btn-sm" name="__delete_profile" value="1" onclick="return confirm('Bu profili silmek istiyor musunuz?')">Sil</button><?php endif; ?>
+            </form>
+          </div>
+        </div>
+        <?php if ($patient): ?>
         <div class="card card-glass text-white">
           <div class="card-body">
             <h5 class="card-title">NFC/QR Acil Profil</h5>
-            <p class="small">Bu QR kodu NFC bilekliği/etiketi ile eşleyin. Kod, hastanın acil profil sayfasına yönlendirir.</p>
+            <p class="small">Bu QR kodu NFC bilekliği/etiketi ile eşleyin.</p>
             <div class="text-center my-3">
               <img src="<?= $qrApi ?>" alt="QR" class="img-fluid rounded border border-1 border-light p-1 bg-white" />
             </div>
@@ -399,6 +418,7 @@ $hasAvatar = file_exists($avatar['path']);
             <a class="btn btn-primary-gradient btn-sm w-100" href="<?= htmlspecialchars($publicUrl) ?>" target="_blank" rel="noopener">Acil Profili Aç</a>
           </div>
         </div>
+        <?php endif; ?>
       </div>
     </div>
   </main>

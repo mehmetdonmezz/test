@@ -96,6 +96,40 @@ function saveSiteSettings(array $settings): bool {
     return (bool)file_put_contents($path, $json, LOCK_EX);
 }
 
+// CMS (SSS ve Duyurular) JSON
+function cmsPath(): string {
+    $path = __DIR__ . '/assets/cms.json';
+    $dir = dirname($path);
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    return $path;
+}
+
+function getCms(): array {
+    $path = cmsPath();
+    if (!file_exists($path)) {
+        $defaults = [
+            'faq' => [
+                'tr' => [ [ 'q' => 'Bu sistem nasıl çalışır?', 'a' => 'NFC/QR bileklik ile acil profil görüntülenir.' ] ],
+                'en' => [ [ 'q' => 'How does it work?', 'a' => 'Emergency profile via NFC/QR bracelet.' ] ],
+            ],
+            'announcements' => [
+                'tr' => [ [ 't' => 'Hoş geldiniz', 'b' => 'Yeni sistem yayında.' ] ],
+                'en' => [ [ 't' => 'Welcome', 'b' => 'New system is live.' ] ],
+            ],
+        ];
+        file_put_contents($path, json_encode($defaults, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));
+        return $defaults;
+    }
+    $json = json_decode(file_get_contents($path), true);
+    return is_array($json) ? $json : [ 'faq' => ['tr'=>[],'en'=>[]], 'announcements' => ['tr'=>[],'en'=>[]] ];
+}
+
+function saveCms(array $cms): bool {
+    $path = cmsPath();
+    $json = json_encode($cms, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE);
+    return (bool)file_put_contents($path, $json, LOCK_EX);
+}
+
 // Ek tabloları oluştur
 function ensureExtraTables(PDO $pdo): void {
     // Profil görüntüleme logları

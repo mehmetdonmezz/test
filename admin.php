@@ -107,6 +107,8 @@ function q($k, $v) {
     <div class="d-flex align-items-center gap-2">
       <a class="btn btn-outline-light btn-sm" href="admin_site.php"><?= t('site_settings') ?></a>
       <a class="btn btn-outline-light btn-sm" href="admin_analytics.php"><?= t('analytics') ?></a>
+      <a class="btn btn-outline-light btn-sm" href="admin_cms.php">CMS</a>
+      <a class="btn btn-outline-light btn-sm" href="admin_export.php">Dışa/İçe Aktar</a>
       <div class="dropdown">
         <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= t('language') ?></button>
         <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
