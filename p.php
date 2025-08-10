@@ -4,12 +4,22 @@ require_once __DIR__ . '/lang.php';
 setLangFromRequest();
 
 $uid = isset($_GET['uid']) ? (int)$_GET['uid'] : 0;
+$pid = isset($_GET['pid']) ? (int)$_GET['pid'] : 0; // çoklu profil desteği
 $code = $_GET['code'] ?? '';
 
-if ($uid <= 0 || !$code || !verifyPublicCode($uid, $code)) {
-    http_response_code(400);
-    echo 'Invalid link';
-    exit;
+// Doğrulama: öncelik pid
+if ($pid > 0) {
+    if (!$code || !verifyPublicCodeForPatient($pid, $code)) {
+        http_response_code(400);
+        echo 'Invalid link';
+        exit;
+    }
+} else {
+    if ($uid <= 0 || !$code || !verifyPublicCode($uid, $code)) {
+        http_response_code(400);
+        echo 'Invalid link';
+        exit;
+    }
 }
 
 function parseNotesRich(?string $notes): array {
@@ -87,10 +97,28 @@ function parseNotesRich(?string $notes): array {
 }
 
 // Hasta verisini getir
-$stmt = $pdo->prepare('SELECT p.hasta_adi, p.hasta_dogum, p.hasta_kan, p.hasta_ilac, p.hasta_notlar, u.name as user_name, u.email as user_email FROM patient_info p JOIN users u ON u.id = p.user_id WHERE p.user_id = ?');
-$stmt->execute([$uid]);
+if ($pid > 0) {
+    $stmt = $pdo->prepare('SELECT p.id as pid, p.user_id, p.hasta_adi, p.hasta_dogum, p.hasta_kan, p.hasta_ilac, p.hasta_notlar, u.name as user_name, u.email as user_email FROM patient_info p JOIN users u ON u.id = p.user_id WHERE p.id = ?');
+    $stmt->execute([$pid]);
+} else {
+    $stmt = $pdo->prepare('SELECT p.id as pid, p.user_id, p.hasta_adi, p.hasta_dogum, p.hasta_kan, p.hasta_ilac, p.hasta_notlar, u.name as user_name, u.email as user_email FROM patient_info p JOIN users u ON u.id = p.user_id WHERE p.user_id = ? ORDER BY p.id ASC LIMIT 1');
+    $stmt->execute([$uid]);
+}
 $patient = $stmt->fetch();
 $meta = parseNotesRich($patient['hasta_notlar'] ?? null);
+
+// Görüntüleme logu
+if ($patient && !empty($patient['pid'])) {
+    try {
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        if ($ip && strpos($ip, ',') !== false) { $ip = trim(explode(',', $ip)[0]); }
+        $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 250);
+        $ins = $pdo->prepare('INSERT INTO profile_views (patient_id, ip, ua) VALUES (?, ?, ?)');
+        $ins->execute([(int)$patient['pid'], $ip, $ua]);
+    } catch (Throwable $e) {
+        // ignore
+    }
+}
 
 // Yaş hesapla
 $ageText = '';
@@ -106,13 +134,23 @@ if (!empty($patient['hasta_dogum'])) {
 }
 
 // Dinamik linkler
-$publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
-    (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
-    $_SERVER['HTTP_HOST'] ?? 'localhost',
-    rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/.'),
-    $uid,
-    $code
-);
+if (!empty($patient['pid'])) {
+    $publicUrl = sprintf('%s://%s%s/p.php?pid=%d&code=%s',
+        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
+        $_SERVER['HTTP_HOST'] ?? 'localhost',
+        rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/.'),
+        (int)$patient['pid'],
+        makePublicCodeForPatient((int)$patient['pid'])
+    );
+} else {
+    $publicUrl = sprintf('%s://%s%s/p.php?uid=%d&code=%s',
+        (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http',
+        $_SERVER['HTTP_HOST'] ?? 'localhost',
+        rtrim(dirname($_SERVER['SCRIPT_NAME'] ?? ''), '/.'),
+        $uid,
+        $code
+    );
+}
 $qrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' . urlencode($publicUrl);
 
 $mapsQuery = $meta['coords'] ?: $meta['address'];
