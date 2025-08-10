@@ -16,6 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
     $password_confirm = $_POST["password_confirm"] ?? "";
+    $accept_terms = isset($_POST['accept_terms']);
+    $accept_privacy = isset($_POST['accept_privacy']);
 
     if (!$name || !$email || !$password || !$password_confirm) {
         $error = t('fill_all_fields');
@@ -23,6 +25,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = t('invalid_email');
     } elseif ($password !== $password_confirm) {
         $error = t('passwords_mismatch');
+    } elseif (!$accept_terms || !$accept_privacy) {
+        $error = 'Lütfen kullanım şartları ve gizlilik sözleşmesini kabul edin.';
     } else {
         try {
             $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
@@ -33,6 +37,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
                 $insert = $pdo->prepare("INSERT INTO users (name, email, password, is_admin) VALUES (?, ?, ?, 0)");
                 if ($insert->execute([$name, $email, $hashed_password])) {
+                    $userId = (int)$pdo->lastInsertId();
+                    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+                    if ($ip && strpos($ip, ',') !== false) { $ip = trim(explode(',', $ip)[0]); }
+                    $insC = $pdo->prepare("INSERT INTO user_consents (user_id, terms_accepted_at, privacy_accepted_at, ip) VALUES (?, NOW(), NOW(), ?)");
+                    $insC->execute([$userId, $ip]);
                     $success = t('register_success');
                 } else {
                     $error = t('server_error');
@@ -96,6 +105,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
               <div class="mb-3">
                 <label for="password_confirm" class="form-label"><?= t('password_confirm') ?></label>
                 <input type="password" id="password_confirm" name="password_confirm" class="form-control" required />
+              </div>
+              <div class="form-check text-white-50 small mb-2">
+                <input class="form-check-input" type="checkbox" id="accept_terms" name="accept_terms" required />
+                <label class="form-check-label" for="accept_terms">Kullanım Şartları'nı okudum ve kabul ediyorum (<a href="terms.php" class="link-info" target="_blank">oku</a>).</label>
+              </div>
+              <div class="form-check text-white-50 small mb-3">
+                <input class="form-check-input" type="checkbox" id="accept_privacy" name="accept_privacy" required />
+                <label class="form-check-label" for="accept_privacy">Gizlilik Sözleşmesi'ni okudum ve kabul ediyorum (<a href="privacy.php" class="link-info" target="_blank">oku</a>).</label>
               </div>
               <button type="submit" class="btn btn-primary-gradient w-100 py-2"><?= t('sign_up') ?></button>
             </form>
