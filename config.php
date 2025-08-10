@@ -119,6 +119,16 @@ function ensureExtraTables(PDO $pdo): void {
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         UNIQUE KEY uniq_user (user_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Profil etkinlikleri (çağrı, konum açma, yazdırma vb.)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS profile_events (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT NOT NULL,
+        event VARCHAR(32) NOT NULL,
+        meta VARCHAR(255) DEFAULT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX(patient_id), INDEX(event), INDEX(created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 }
 
 ensureExtraTables($pdo);

@@ -157,6 +157,10 @@ $mapsQuery = $meta['coords'] ?: $meta['address'];
 $mapsUrl = $mapsQuery ? ('https://maps.google.com/?q=' . urlencode($mapsQuery)) : '#';
 $mapsEmbed = $mapsQuery ? ('https://maps.google.com/maps?q=' . urlencode($mapsQuery) . '&output=embed') : '';
 $emPhone = preg_replace('/\D+/', '', $meta['emergency_phone']);
+$eventParams = '';
+if (!empty($patient['pid'])) {
+    $eventParams = 'pid=' . (int)$patient['pid'] . '&code=' . urlencode(makePublicCodeForPatient((int)$patient['pid']));
+}
 ?>
 <!DOCTYPE html>
 <html lang="tr">
@@ -343,9 +347,9 @@ $emPhone = preg_replace('/\D+/', '', $meta['emergency_phone']);
                         </div>
                     </div>
                     <div class="actions">
-                        <a href="tel:112" class="btn btn-call">112'yi Ara</a>
-                        <?php if ($emPhone): ?><a href="tel:<?= htmlspecialchars($emPhone) ?>" class="btn btn-alert">Yakınına Bildirim Gönder</a><?php endif; ?>
-                        <?php if ($mapsUrl && $mapsUrl !== '#'): ?><a href="<?= htmlspecialchars($mapsUrl) ?>" target="_blank" class="btn btn-location">Konumu Göster</a><?php endif; ?>
+                        <a href="tel:112" class="btn btn-call" onclick="try{navigator.sendBeacon && navigator.sendBeacon('event_log.php?<?= $eventParams ?>', new Blob([JSON.stringify({event:'call_112'})],{type:'application/json'}));}catch(e){}">112'yi Ara</a>
+                        <?php if ($emPhone): ?><a href="tel:<?= htmlspecialchars($emPhone) ?>" class="btn btn-alert" onclick="try{navigator.sendBeacon && navigator.sendBeacon('event_log.php?<?= $eventParams ?>', new Blob([JSON.stringify({event:'call_contact',meta:'<?= htmlspecialchars($emPhone) ?>'})],{type:'application/json'}));}catch(e){}">Yakınına Bildirim Gönder</a><?php endif; ?>
+                        <?php if ($mapsUrl && $mapsUrl !== '#'): ?><a href="<?= htmlspecialchars($mapsUrl) ?>" target="_blank" class="btn btn-location" onclick="try{navigator.sendBeacon && navigator.sendBeacon('event_log.php?<?= $eventParams ?>', new Blob([JSON.stringify({event:'open_maps'})],{type:'application/json'}));}catch(e){}">Konumu Göster</a><?php endif; ?>
                     </div>
                 </div>
             </div>

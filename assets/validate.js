@@ -90,3 +90,9 @@
   }
   document.addEventListener('DOMContentLoaded', attachValidation);
 })();
+window.ardioLog = function(eventName, meta) {
+  try {
+    const data = new Blob([JSON.stringify({event: eventName, meta, ts: Date.now()})], {type: 'application/json'});
+    navigator.sendBeacon && navigator.sendBeacon('event_log.php', data);
+  } catch (e) {}
+};
