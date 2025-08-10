@@ -50,6 +50,17 @@ function verifyPublicCode(int $userId, string $code): bool {
     return hash_equals($expected, $code);
 }
 
+// Hasta (patient_info.id) bazlı kod üretimi
+function makePublicCodeForPatient(int $patientId): string {
+    global $PUBLIC_LINK_SECRET;
+    return hash_hmac('sha256', 'pid:' . (string)$patientId, $PUBLIC_LINK_SECRET);
+}
+
+function verifyPublicCodeForPatient(int $patientId, string $code): bool {
+    $expected = makePublicCodeForPatient($patientId);
+    return hash_equals($expected, $code);
+}
+
 // Site ayarları (JSON tabanlı basit storage)
 function siteSettingsPath(): string {
     $path = __DIR__ . '/assets/site.json';
@@ -84,6 +95,33 @@ function saveSiteSettings(array $settings): bool {
     $json = json_encode($settings, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE);
     return (bool)file_put_contents($path, $json, LOCK_EX);
 }
+
+// Ek tabloları oluştur
+function ensureExtraTables(PDO $pdo): void {
+    // Profil görüntüleme logları
+    $pdo->exec("CREATE TABLE IF NOT EXISTS profile_views (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        patient_id INT NOT NULL,
+        ip VARCHAR(64) DEFAULT NULL,
+        ua VARCHAR(255) DEFAULT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX (patient_id),
+        INDEX (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+    // Kullanıcı onayları (sözleşme/gizlilik)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS user_consents (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        terms_accepted_at DATETIME DEFAULT NULL,
+        privacy_accepted_at DATETIME DEFAULT NULL,
+        ip VARCHAR(64) DEFAULT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+}
+
+ensureExtraTables($pdo);
 
 // Çoklu dil desteği için başlangıç
 require_once __DIR__ . '/lang.php';
