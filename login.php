@@ -1,5 +1,8 @@
 <?php
-session_start();
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/lang.php';
+setLangFromRequest();
+
 if (isset($_SESSION["user_id"])) {
     header("Location: panel.php");
     exit;
@@ -8,75 +11,87 @@ if (isset($_SESSION["user_id"])) {
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST["email"] ?? "";
+    $email = trim($_POST["email"] ?? "");
     $password = $_POST["password"] ?? "";
 
-    // Şifreyi SHA-256 ile hash'le
-    $hashedPassword = hash("sha256", $password);
+    try {
+        $stmt = $pdo->prepare("SELECT id, name, email, password, is_admin FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
 
-    $conn = new mysqli("localhost", "root", "147369", "hasta_sistemi");
-    if ($conn->connect_error) {
-        die("Bağlantı hatası: " . $conn->connect_error);
-    }
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION["user_id"] = $user["id"];
+            $_SESSION["user_name"] = $user["name"];
+            $_SESSION["is_admin"] = $user["is_admin"];
 
-    $stmt = $conn->prepare("SELECT id, name, is_admin FROM users WHERE email = ? AND password = ?");
-    $stmt->bind_param("ss", $email, $hashedPassword);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if ($row = $result->fetch_assoc()) {
-        $_SESSION["user_id"] = $row["id"];
-        $_SESSION["user_name"] = $row["name"];
-        $_SESSION["is_admin"] = $row["is_admin"];
-
-        // Admin ise admin paneline yönlendir
-        if ($row["is_admin"]) {
-            header("Location: admin.php");
+            if ((int)$user["is_admin"] === 1) {
+                header("Location: admin.php");
+            } else {
+                header("Location: panel.php");
+            }
+            exit;
         } else {
-            header("Location: panel.php");
+            $error = t('error_invalid_credentials');
         }
-        exit;
-    } else {
-        $error = "Hatalı şifre veya e-posta.";
+    } catch (Throwable $e) {
+        $error = t('server_error');
     }
-
-    $stmt->close();
-    $conn->close();
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="<?= htmlspecialchars(getLang()) ?>" data-bs-theme="dark">
 <head>
   <meta charset="UTF-8" />
-  <title>Giriş Yap - ARDİO</title>
+  <title><?= t('login_title') ?></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="assets/styles.css" rel="stylesheet" />
 </head>
-<body class="bg-dark text-white d-flex justify-content-center align-items-center" style="height:100vh;">
-
-  <div class="card bg-secondary p-4" style="width: 350px;">
-    <h3 class="mb-4 text-center">Giriş Yap</h3>
-
-    <?php if ($error): ?>
-      <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-
-    <form method="POST" action="login.php">
-      <div class="mb-3">
-        <label for="email" class="form-label">E-posta</label>
-        <input type="email" id="email" name="email" class="form-control" required autofocus />
+<body class="auth-bg d-flex align-items-center">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-5 col-lg-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <button class="btn btn-sm btn-outline-info" onclick="toggleTheme()" type="button"><span data-theme-label>Aydınlık</span> Moda Geç</button>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown"><?= t('language') ?></button>
+            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+              <li><a class="dropdown-item" href="?lang=tr"><?= t('turkish') ?></a></li>
+              <li><a class="dropdown-item" href="?lang=en"><?= t('english') ?></a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="text-center mb-4">
+          <a class="navbar-brand text-white fs-3 text-decoration-none" href="index.php">ARDİO</a>
+          <div class="text-white-50 small">Gençliğin Teknolojisi</div>
+        </div>
+        <div class="card card-glass text-white shadow-lg">
+          <div class="card-body p-4">
+            <h3 class="mb-3 text-center"><?= t('sign_in') ?></h3>
+            <?php if ($error): ?>
+              <div class="alert alert-danger mb-3"><?= htmlspecialchars($error) ?></div>
+            <?php endif; ?>
+            <form method="POST" action="login.php" novalidate>
+              <div class="mb-3">
+                <label for="email" class="form-label"><?= t('email') ?></label>
+                <input type="email" id="email" name="email" class="form-control" required autofocus />
+              </div>
+              <div class="mb-3">
+                <label for="password" class="form-label"><?= t('password') ?></label>
+                <input type="password" id="password" name="password" class="form-control" required />
+              </div>
+              <button type="submit" class="btn btn-primary-gradient w-100 py-2"><?= t('sign_in') ?></button>
+            </form>
+            <p class="mt-3 text-center text-white-50">
+              <?= t('no_account') ?> <a href="register.php" class="text-info fw-semibold text-decoration-none"><?= t('sign_up') ?></a>
+            </p>
+          </div>
+        </div>
       </div>
-      <div class="mb-3">
-        <label for="password" class="form-label">Şifre</label>
-        <input type="password" id="password" name="password" class="form-control" required />
-      </div>
-      <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
-    </form>
-
-    <p class="mt-3 text-center">
-      Hesabın yok mu? <a href="register.php" class="text-info">Kayıt Ol</a>
-    </p>
+    </div>
   </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/theme.js"></script>
 </body>
 </html>

@@ -1,0 +1,68 @@
+/* Genel küçük dokunuşlar */
+body {
+  letter-spacing: 0.2px;
+}
+.navbar-brand {
+  letter-spacing: 1px;
+}
+/* Auth sayfaları için gradient arka plan */
+.auth-bg {
+  min-height: 100vh;
+  background: radial-gradient(1200px 600px at 10% -10%, rgba(0, 123, 255, 0.25), transparent 60%),
+              radial-gradient(1200px 600px at 90% 110%, rgba(13, 110, 253, 0.25), transparent 60%),
+              linear-gradient(135deg, #0b0f19 0%, #0a1a2b 50%, #0a2742 100%);
+}
+.card-glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+}
+.form-control:focus {
+  box-shadow: 0 0 0 .2rem rgba(13,110,253,.25);
+}
+.btn-primary-gradient {
+  background: linear-gradient(90deg, #0d6efd 0%, #0dcaf0 100%);
+  border: none;
+}
+.btn-primary-gradient:hover {
+  opacity: .9;
+}
+.table-clean th {
+  background: #0d6efd;
+  color: #fff;
+}
+.badge-soft {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+/* Landing sayfası */
+.hero-landing {
+  background: radial-gradient(1200px 800px at -10% -10%, rgba(13,110,253,.25), transparent 60%),
+              radial-gradient(1200px 800px at 110% 110%, rgba(102,16,242,.25), transparent 60%),
+              linear-gradient(135deg, #0b0f19 0%, #0a1a2b 50%, #0a2742 100%);
+  color: #fff;
+}
+.hero-landing h1 { letter-spacing: .4px; }
+.section-muted { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.00)); border-top: 1px solid rgba(255,255,255,.06); border-bottom: 1px solid rgba(255,255,255,.06); }
+.icon-pill { width:48px; height:48px; border-radius:12px; display:inline-flex; align-items:center; justify-content:center; }
+.card-feature { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); }
+
+/* Galeri */
+.gallery-img { border-radius: 12px; border: 1px solid rgba(255,255,255,.08); }
+.gallery-img:hover { transform: translateY(-2px); transition: .2s ease; }
+
+/* Footer */
+.footer-link { color: rgba(255,255,255,.7); text-decoration: none; }
+.footer-link:hover { color: #fff; text-decoration: underline; }
+
+/* Dark theme readability tweaks */
+[data-bs-theme="dark"] .card.bg-black { background-color: #10151f !important; border-color: rgba(255,255,255,.06) !important; }
+[data-bs-theme="dark"] .form-label { color: rgba(255,255,255,.9) !important; }
+[data-bs-theme="dark"] .form-control, [data-bs-theme="dark"] .form-select {
+  background-color: #0d1117 !important;
+  border-color: #2b3441 !important;
+  color: #e9ecef !important;
+}
+[data-bs-theme="dark"] .form-control::placeholder { color: rgba(233,236,239,.6) !important; }
+[data-bs-theme="dark"] .list-group-item.bg-black { background-color: #0f1520 !important; color: #e9ecef !important; }
